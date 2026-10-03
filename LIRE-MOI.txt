@@ -1,0 +1,14 @@
+SPORTS BET — VERSION AUTONOME
+
+1. Crée un NOUVEAU dépôt GitHub nommé sports-bet (ne remplace pas Bridge maman).
+2. Décompresse le ZIP puis ajoute les cinq fichiers index.html, app.js, style.css, ticket-pdf.js et favicon.svg à la racine avec Add file > Upload files > Commit changes.
+3. Settings > Pages > Deploy from a branch > main > / (root) > Save.
+4. Ouvre le lien indiqué par GitHub une fois publié.
+
+UTILISATION
+Match management : ajoute les équipes et les cotes. Choisis tes sélections puis confirme ton ticket.
+Dans Match management, saisis le résultat final : les tickets et le crédit virtuel se mettent à jour.
+Les images et PDF reprennent le ticket monochrome de SPORTS BET.
+Aucun résultat automatique, aucun email, aucun serveur. Les données restent dans ce navigateur et ne se synchronisent pas avec le SPORTS BET en ligne.
+Sauvegarde régulièrement avec Sauvegarder mes données. Restaurer une sauvegarde remplace les données actuelles. Effacer les données du navigateur efface cet historique.
+Simulation : aucun gain réel.
