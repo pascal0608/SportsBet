@@ -47,7 +47,19 @@ test('gagné + annulé : la cote annulée compte pour 1', () => {
   settleTickets(s, NOW);
   assert.equal(s.tickets[0].status, 'WON');
   assert.equal(s.tickets[0].odd, 1.5);
+  assert.equal(s.tickets[0].initialOdd, 1.5 * 2.2);
   assert.equal(s.tickets[0].payout, 3);
+});
+
+test('toutes annulées : ticket VOID, mise remboursée', () => {
+  const s = setup([official(1, '11', 1.5), official(2, '21', 2.2)], { results: { 'fdj-1-1': res('11', 'VOID'), 'fdj-2-2': res('21', 'VOID') } });
+  const settled = settleTickets(s, NOW);
+  assert.equal(settled.length, 1);
+  assert.equal(s.tickets[0].status, 'VOID');
+  assert.equal(s.tickets[0].payout, 2);
+  assert.equal(s.tickets[0].profit, 0);
+  assert.equal(s.balance, 12);
+  assert.match(s.transactions[0].details, /^Refund BET-T$/);
 });
 
 test('résultat absent ou partiel : le ticket reste en attente sans rien modifier', () => {
