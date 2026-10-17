@@ -480,7 +480,11 @@ details.market > summary:hover { border-color: var(--primary); }
 .kv dd { margin: 0; font-family: var(--font-display); font-size: 1.125rem; font-weight: 800; }
 .kv--gain dd { color: var(--success-ink); }
 .ticket-card[data-status="LOST"] .kv--gain dd { color: var(--text-muted); text-decoration: line-through; }
-.ticket-card__foot .btn { justify-self: end; }
+.ticket-card__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--s2); }
+.btn--celebrate { border-color: #e9b800; background: #fff6d1; color: #6b4d00; }
+.btn--celebrate:hover { background: var(--accent); color: var(--accent-ink); }
+.btn--celebrate:hover svg { transform: rotate(-200deg); }
+.btn--celebrate svg { transition: transform var(--t-slow) var(--ease); }
 .ticket-card__id { font-family: var(--font-mono); font-size: .75rem; color: var(--text-muted); }
 
 /* ---------- Dialogs ---------- */
@@ -620,7 +624,8 @@ details.market > summary:hover { border-color: var(--primary); }
   .form-grid--odds { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .result-row { grid-template-columns: 1fr; }
   .ticket-card__foot { grid-template-columns: repeat(3, auto); }
-  .ticket-card__foot .btn { grid-column: 1 / -1; justify-self: stretch; }
+  .ticket-card__actions { grid-column: 1 / -1; }
+  .ticket-card__actions .btn { flex: 1; }
   .dialog { width: 100vw; max-width: 100vw; max-height: 100dvh; margin: auto 0 0; border-radius: var(--r-lg) var(--r-lg) 0 0; }
   .dialog--small { margin: auto; width: calc(100vw - var(--s8)); border-radius: var(--r-lg); }
   .inline-field { flex-wrap: wrap; }

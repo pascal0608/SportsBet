@@ -118,9 +118,9 @@ function renderTickets() {
 }
 
 // Première ouverture d'un ticket gagnant : célébration complète, ensuite version calme.
-function openTicket(ticket) {
+function openTicket(ticket, { replay = false } = {}) {
   if (!ticket) return;
-  const party = ticket.status === 'WON' ? (isCelebrated(app.prefs, ticket.id) ? 'calm' : 'full') : null;
+  const party = ticket.status === 'WON' ? (replay || !isCelebrated(app.prefs, ticket.id) ? 'full' : 'calm') : null;
   printer.open(ticket, { animate: false, celebrate: party });
   if (party === 'full') {
     markCelebrated(app.prefs, ticket.id);
@@ -363,6 +363,8 @@ function onClick(e) {
   if (filter) { app.historyFilter = filter.dataset.filter; return renderTickets(); }
   const open = e.target.closest('[data-open-ticket]');
   if (open) return openTicket(app.state.tickets.find(t => t.id === open.dataset.openTicket));
+  const replay = e.target.closest('[data-replay-ticket]');
+  if (replay) return openTicket(app.state.tickets.find(t => t.id === replay.dataset.replayTicket), { replay: true });
   const action = e.target.closest('[data-action]')?.dataset.action;
   if (action === 'refresh') return loadCatalog();
   if (action === 'reset-filters') {

@@ -27,7 +27,9 @@ function card(t, verdictOf, isNewWin) {
     + `<div class="ticket-card__foot"><dl class="kv"><dt>Mise</dt><dd class="num">${money(t.stake)}</dd></dl>`
     + `<dl class="kv"><dt>Cote</dt><dd class="num">${decimal(t.odd)}</dd></dl>`
     + `<dl class="kv kv--gain"><dt>${gainLabel}</dt><dd class="num">${gainValue}</dd></dl>`
-    + `<button type="button" class="btn ${fresh ? 'btn--accent' : 'btn--secondary'} btn--sm" data-open-ticket="${esc(t.id)}"><svg aria-hidden="true"><use href="#i-ticket"/></svg>${fresh ? 'Découvrir mon gain' : 'Voir le ticket'}</button></div>`
+    + `<div class="ticket-card__actions">`
+    + (t.status === 'WON' && !fresh ? `<button type="button" class="btn btn--celebrate btn--sm" data-replay-ticket="${esc(t.id)}"><svg aria-hidden="true"><use href="#i-refresh"/></svg>Rejouer<span class="sr-only"> la célébration du ticket ${esc(t.id)}</span></button>` : '')
+    + `<button type="button" class="btn ${fresh ? 'btn--accent' : 'btn--secondary'} btn--sm" data-open-ticket="${esc(t.id)}"><svg aria-hidden="true"><use href="#i-ticket"/></svg>${fresh ? 'Découvrir mon gain' : 'Voir le ticket'}</button></div></div>`
     + `<p class="sr-only">Numéro ${esc(t.id)}</p></article>`;
 }
 

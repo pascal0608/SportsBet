@@ -1,4 +1,4 @@
-import { heightMm, layoutFor, loadTicketFonts, PAPER_MM, stampSvg, ticketPdf, ticketPng, ticketSvg } from './ticket-render.js';
+import { heightMm, layoutFor, loadTicketFonts, PAPER_MM, stampBounds, stampSvg, ticketPdf, ticketPng, ticketSvg } from './ticket-render.js';
 import { countUp, createFx, winSound } from './celebrate.js';
 import { money } from './format.js';
 
@@ -113,7 +113,7 @@ export function createPrinter({ getPlayer, getSound, setSound, notify }) {
     if (!op) return;
     stamp.style.setProperty('--stamp-x', `${op.x / layout.width * 100}%`);
     stamp.style.setProperty('--stamp-y', `${op.y / layout.height * 100}%`);
-    stamp.style.setProperty('--stamp-w', `${(op.w + 16) / layout.width * 100}%`);
+    stamp.style.setProperty('--stamp-w', `${stampBounds(op).w * (op.scale ?? 1) / layout.width * 100}%`);
     paper.parentElement.style.setProperty('--stamp-y', `${op.y / layout.height * 100}%`);
   }
 
@@ -261,9 +261,6 @@ export function createPrinter({ getPlayer, getSound, setSound, notify }) {
     const target = returnFocus?.isConnected && returnFocus !== document.body && !returnFocus.disabled ? returnFocus : document.querySelector('[data-view-link="tickets"]');
     target?.focus();
   });
-  const replay = () => { if (current?.status === 'WON') celebrate(current, true); };
-  stamp.addEventListener('click', replay);
-  document.getElementById('printer-replay').addEventListener('click', replay);
   soundBtn.addEventListener('click', () => {
     setSound(!getSound());
     renderSoundButton();

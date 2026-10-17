@@ -40,7 +40,16 @@ export function stampMarkup(o) {
     + `<text y="60" text-anchor="middle" font-family="${font}" font-size="30" font-weight="800" letter-spacing="2" fill="${STAMP_INK}">${esc(o.sub)}</text>`;
 }
 
-export const stampSvg = o => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-o.w / 2 - 8} ${-o.h / 2 - 8} ${o.w + 16} ${o.h + 16}" aria-hidden="true"><g transform="rotate(${o.angle})">${stampMarkup(o)}</g></svg>`;
+// Boîte englobante du tampon tourné, pour que le masque d'encre ne rogne pas les coins.
+export function stampBounds(o) {
+  const a = Math.abs(o.angle) * Math.PI / 180;
+  return { w: o.w * Math.cos(a) + o.h * Math.sin(a) + 16, h: o.w * Math.sin(a) + o.h * Math.cos(a) + 16 };
+}
+
+export const stampSvg = o => {
+  const b = stampBounds(o);
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-b.w / 2} ${-b.h / 2} ${b.w} ${b.h}" aria-hidden="true"><g transform="rotate(${o.angle})">${stampMarkup(o)}</g></svg>`;
+};
 
 export function ticketSvg(layout, label, { stamp = true } = {}) {
   const { width, height, ops } = layout;
@@ -55,7 +64,7 @@ export function ticketSvg(layout, label, { stamp = true } = {}) {
     } else if (o.kind === 'bar' || o.kind === 'box') {
       parts.push(`<rect x="${o.x}" y="${o.y}" width="${o.w}" height="${o.h}" fill="${INK}"/>`);
     } else if (o.kind === 'stamp') {
-      if (stamp) parts.push(`<g transform="translate(${o.x} ${o.y}) rotate(${o.angle})" opacity=".92">${stampMarkup(o)}</g>`);
+      if (stamp) parts.push(`<g transform="translate(${o.x} ${o.y}) rotate(${o.angle}) scale(${o.scale ?? 1})" opacity=".92">${stampMarkup(o)}</g>`);
     } else if (o.kind === 'shamrock') {
       const k = o.size / SHAMROCK_BOX;
       parts.push(`<g transform="translate(${o.x} ${o.y}) scale(${k})" fill="${INK}">${[0, 120, -120].map(a => `<path transform="rotate(${a})" d="${LEAF_PATH}"/>`).join('')}<path d="${STEM_PATH}" fill="none" stroke="${INK}" stroke-width="7" stroke-linecap="round"/></g>`);
@@ -103,6 +112,7 @@ export async function ticketCanvas(layout, { background = null, scale = 2 } = {}
       ctx.save();
       ctx.translate(o.x, o.y);
       ctx.rotate(o.angle * Math.PI / 180);
+      ctx.scale(o.scale ?? 1, o.scale ?? 1);
       ctx.globalAlpha = .92;
       ctx.strokeStyle = ctx.fillStyle = STAMP_INK;
       ctx.lineWidth = 8;

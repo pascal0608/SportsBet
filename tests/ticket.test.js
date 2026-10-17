@@ -70,17 +70,23 @@ test('durée d\'impression : 1,8 s + 0,25 s par sélection, plafonnée à 4 s', 
   assert.equal(printDuration(20), 4000);
 });
 
-test('ticket gagnant : tampon dans une zone vide sous l\'en-tête, absent sinon', () => {
+test('ticket gagnant : tampon placé là où il recouvre le moins de texte, sans changer la hauteur', () => {
   for (const status of ['PENDING', 'LOST', 'VOID']) assert.equal(ticketLayout(ticket(status)).ops.some(o => o.kind === 'stamp'), false, status);
   const layout = ticketLayout(ticket('WON', { payout: 31.85 }));
   const stamp = layout.ops.find(o => o.kind === 'stamp');
   assert.equal(stamp.text, 'GAGNÉ');
   assert.equal(stamp.sub, '+31,85 EUR');
+  assert.equal(layout.height, ticketLayout(ticket('PENDING')).height);
   const a = Math.abs(stamp.angle) * Math.PI / 180;
-  const halfW = (stamp.w * Math.cos(a) + stamp.h * Math.sin(a)) / 2, halfH = (stamp.w * Math.sin(a) + stamp.h * Math.cos(a)) / 2;
+  const halfW = (stamp.w * Math.cos(a) + stamp.h * Math.sin(a)) * stamp.scale / 2, halfH = (stamp.w * Math.sin(a) + stamp.h * Math.cos(a)) * stamp.scale / 2;
   assert.ok(stamp.x - halfW >= 0 && stamp.x + halfW <= PAPER_WIDTH, 'largeur');
-  const overlap = layout.ops.filter(o => o.kind === 'text' && o.y > stamp.y - halfH && o.y - o.size < stamp.y + halfH);
-  assert.deepEqual(overlap, [], 'aucun texte sous le tampon');
-  const plain = ticketLayout(ticket('PENDING'));
-  assert.ok(layout.height > plain.height);
+  assert.ok(stamp.y - halfH >= 0 && stamp.y + halfH <= layout.height, 'hauteur');
+  const centerY = layout.height / 2, naive = { ...stamp, x: PAPER_WIDTH / 2, y: centerY };
+  const ink = st => layout.ops.filter(o => o.kind === 'text').reduce((sum, o) => {
+    const w = o.text.length * o.size * (o.font === 'display' ? .5 : .6);
+    const x = o.align === 'right' ? o.x - w : o.align === 'center' ? o.x - w / 2 : o.x;
+    const ox = Math.min(st.x + halfW, x + w) - Math.max(st.x - halfW, x), oy = Math.min(st.y + halfH, o.y) - Math.max(st.y - halfH, o.y - o.size * .78);
+    return sum + (ox > 0 && oy > 0 ? ox * oy : 0);
+  }, 0);
+  assert.ok(ink(stamp) < ink(naive) / 3, `tampon pas assez dégagé : ${Math.round(ink(stamp))} vs ${Math.round(ink(naive))} au centre`);
 });

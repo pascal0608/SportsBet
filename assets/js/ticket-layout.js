@@ -3,8 +3,7 @@ import { betType, chosen, decimal, formatDate, formatTime, marketLabel, sportLab
 // Unités logiques : 576 = largeur imprimable d'un rouleau 80 mm à 203 dpi.
 export const PAPER_WIDTH = 576;
 export const TEETH = 14;
-export const STAMP = { w: 400, h: 170, angle: -8 };
-const STAMP_ZONE = 236;
+export const STAMP = { w: 400, h: 170, angle: -11, scale: .62 };
 const M = 32, R = PAPER_WIDTH - M, CENTER = PAPER_WIDTH / 2;
 const MONO_ADVANCE = 0.6;
 const cols = size => Math.floor((R - M) / (size * MONO_ADVANCE));
@@ -75,12 +74,6 @@ export function ticketLayout(t, { player = 'Joueur' } = {}) {
   y += 32; pair('JOUEUR', String(player).toUpperCase());
   y += 24; rule();
 
-  // Ticket gagnant : zone dégagée sous l'en-tête pour le tampon, visible dès l'ouverture.
-  if (t.status === 'WON') {
-    ops.push({ kind: 'stamp', x: CENTER, y: y + STAMP_ZONE / 2, w: STAMP.w, h: STAMP.h, angle: STAMP.angle, text: 'GAGNÉ', sub: '+' + decimal(t.payout) + ' EUR' });
-    y += STAMP_ZONE;
-    rule();
-  }
 
   y += 52; text(betType(t.picks.length).toUpperCase(), CENTER, 46, { font: 'display', weight: 800, align: 'center' });
   y += 24; rule();
@@ -113,7 +106,49 @@ export function ticketLayout(t, { player = 'Joueur' } = {}) {
   y += 58; text('BONNE CHANCE !', CENTER, 42, { font: 'display', weight: 800, align: 'center' });
   y += 44;
 
-  return { width: PAPER_WIDTH, height: y + TEETH, ops };
+  const height = y + TEETH;
+  if (t.status === 'WON') {
+    const spot = stampSpot(ops, PAPER_WIDTH, height);
+    ops.push({ kind: 'stamp', ...spot, w: STAMP.w, h: STAMP.h, angle: STAMP.angle, scale: STAMP.scale, text: 'GAGNÉ', sub: '+' + decimal(t.payout) + ' EUR' });
+  }
+  return { width: PAPER_WIDTH, height, ops };
+}
+
+// Boîtes approximatives des éléments imprimés, pour placer le tampon là où il recouvre le moins de choses.
+function inkBoxes(ops) {
+  return ops.flatMap(o => {
+    if (o.kind === 'text') {
+      const w = o.text.length * o.size * (o.font === 'display' ? .5 : MONO_ADVANCE);
+      const x = o.align === 'right' ? o.x - w : o.align === 'center' ? o.x - w / 2 : o.x;
+      return [{ x, y: o.y - o.size * .78, w, h: o.size * .95, weight: 1 }];
+    }
+    if (o.kind === 'box') return [{ x: o.x, y: o.y, w: o.w, h: o.h, weight: 1 }];
+    if (o.kind === 'bar') return [{ x: o.x, y: o.y, w: o.w + 2, h: o.h, weight: .35 }];
+    if (o.kind === 'shamrock') return [{ x: o.x - o.size / 2, y: o.y - o.size / 2, w: o.size, h: o.size, weight: 1 }];
+    if (o.kind === 'rule') return [{ x: o.x1, y: o.y - 2, w: o.x2 - o.x1, h: 4, weight: .1 }];
+    return [];
+  });
+}
+
+export function stampSpot(ops, width, height) {
+  const a = Math.abs(STAMP.angle) * Math.PI / 180;
+  const bw = (STAMP.w * Math.cos(a) + STAMP.h * Math.sin(a)) * STAMP.scale;
+  const bh = (STAMP.w * Math.sin(a) + STAMP.h * Math.cos(a)) * STAMP.scale;
+  const boxes = inkBoxes(ops);
+  let best = null;
+  for (let cy = bh / 2 + 12; cy <= height - TEETH - bh / 2 - 12; cy += 12) {
+    for (let cx = bw / 2 + 10; cx <= width - bw / 2 - 10; cx += 12) {
+      const x0 = cx - bw / 2, y0 = cy - bh / 2;
+      let ink = 0;
+      for (const b of boxes) {
+        const ox = Math.min(x0 + bw, b.x + b.w) - Math.max(x0, b.x), oy = Math.min(y0 + bh, b.y + b.h) - Math.max(y0, b.y);
+        if (ox > 0 && oy > 0) ink += ox * oy * b.weight;
+      }
+      const score = ink + cy * .5;
+      if (!best || score < best.score) best = { score, x: Math.round(cx), y: Math.round(cy) };
+    }
+  }
+  return { x: best.x, y: best.y };
 }
 
 export function paperPath(width, height, teeth = TEETH) {
