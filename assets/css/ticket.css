@@ -1,0 +1,84 @@
+.printer {
+  width: 100vw;
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
+  padding: var(--s6) var(--s4) var(--s8);
+  border: 0;
+  background: radial-gradient(120% 80% at 50% 0%, #1a2c56 0%, var(--bg) 60%);
+  color: var(--text-inverse);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.printer[open] { display: flex; flex-direction: column; align-items: center; gap: var(--s5); }
+.printer::backdrop { background: var(--bg); }
+
+.printer__stage { width: min(380px, calc(100vw - var(--s8))); }
+.printer__machine {
+  position: relative;
+  z-index: 1;
+  height: 96px;
+  border-radius: 20px 20px 12px 12px;
+  background: linear-gradient(180deg, #34426a 0%, #222d4c 70%, #1b2440 100%);
+  box-shadow: 0 2px 0 #46557f inset, 0 18px 30px rgb(0 0 0 / .45);
+}
+.printer__top { display: flex; align-items: center; gap: var(--s2); padding: var(--s4) var(--s5); }
+.printer__led { width: 10px; height: 10px; border-radius: 50%; background: var(--brand); box-shadow: 0 0 10px var(--brand); }
+.printer[data-state="printing"] .printer__led { animation: led 300ms steps(2) infinite; }
+@keyframes led { 50% { opacity: .3; } }
+.printer__brand { margin-left: auto; font-family: var(--font-display); font-weight: 800; letter-spacing: .12em; color: #8d9cc4; }
+.printer__slot { position: absolute; left: 16px; right: 16px; bottom: 16px; height: 10px; border-radius: 5px; background: #04060c; box-shadow: inset 0 3px 4px #000, 0 1px 0 #4c5b86; }
+
+.printer__window { position: relative; margin: -22px 26px 0; }
+.printer__paper { transform-origin: 50% 0; filter: drop-shadow(0 6px 10px rgb(0 0 0 / .3)); }
+.printer[data-state="printing"] .printer__paper { clip-path: inset(0 0 100% 0); }
+.printer[data-state="done"] .printer__paper { animation: paper-drop 520ms var(--ease) forwards; }
+.ticket-svg { display: block; width: 100%; height: auto; }
+
+@keyframes print-feed {
+  from { clip-path: inset(0 0 100% 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes paper-drop {
+  0% { transform: translateY(0); }
+  55% { transform: translateY(22px) rotate(-1.4deg); }
+  100% { transform: translateY(14px) rotate(-.8deg); filter: drop-shadow(0 22px 26px rgb(0 0 0 / .5)); }
+}
+
+.printer__skip { color: var(--text-inverse-muted); font-size: .875rem; }
+.printer:not([data-state="printing"]) .printer__skip { display: none; }
+
+.printer__actions {
+  position: sticky;
+  bottom: calc(-1 * var(--s8));
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--s2);
+  width: min(560px, 100%);
+  margin-top: var(--s4);
+  padding: var(--s4) 0 var(--s8);
+  background: linear-gradient(to top, var(--bg) 70%, transparent);
+}
+.printer[data-state="printing"] .printer__actions { visibility: hidden; }
+.printer[data-state="done"] .printer__actions { animation: fade-up var(--t-slow) var(--ease) 300ms both; }
+@keyframes fade-up { from { opacity: 0; transform: translateY(8px); } }
+
+.printer__sound { position: fixed; top: var(--s3); right: var(--s3); z-index: 5; }
+@media (max-width: 600px) { .printer__stage { padding-top: var(--s10); } }
+.printer__sound span[aria-hidden] { font-size: 1.25rem; }
+
+.print-root { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .printer[data-state="done"] .printer__paper { animation: none; transform: translateY(14px) rotate(-.8deg); }
+}
+
+@media print {
+  html, body { background: #fff !important; }
+  body > *:not(.print-root) { display: none !important; }
+  .print-root { display: block !important; width: 80mm; margin: 0 auto; }
+  .print-root .ticket-svg { width: 80mm; height: auto; }
+}
