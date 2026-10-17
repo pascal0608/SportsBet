@@ -1,11 +1,12 @@
 import { applyOfficialResults, fetchCatalog, filterMatches, isClosed, LIVE_CATALOG_AGE_MS, MAX_CATALOG_AGE_MS, mergeCatalog, options } from './catalog.js';
 import { buildPicks, checkBet, combinedOdd, placeBet, toggleSelection } from './betslip.js';
 import { settleTickets } from './settle.js';
-import { BACKUP_FILENAME, backupJson, isValidBackup, load, MAX_BACKUP_BYTES, persist, recordActivity } from './state.js';
+import { BACKUP_FILENAME, backupJson, load, MAX_BACKUP_BYTES, parseBackup, persist, pruneOfficialResults, recordActivity } from './state.js';
 import { chosen, englishMarket, englishSport, esc, money, round2 } from './format.js';
 import { ticketPdf, ticketPng } from './ticket-render.js';
 
-let state = load(localStorage);
+const loaded = load(localStorage);
+let state = loaded.state;
 let selected = {}, timer;
 const $ = id => document.getElementById(id);
 
@@ -120,6 +121,7 @@ async function loadCatalog() {
     mergeCatalog(state, data.matches);
     save(); filterOptions(); render();
     settleTickets(state);
+    pruneOfficialResults(state);
     save(); render();
     const age = Date.now() - date;
     const partial = (data.failedCompetitions?.length || data.incompleteCompetitions?.length) ? ' · catalogue partiel' : '';
@@ -234,8 +236,7 @@ $('restore').addEventListener('change', async e => {
   if (!file) return;
   try {
     if (file.size > MAX_BACKUP_BYTES) throw Error('Too large');
-    const d = JSON.parse(await file.text());
-    if (!isValidBackup(d)) throw Error('Invalid backup');
+    const d = parseBackup(await file.text());
     if (confirm('Remplacer les données de ce navigateur par cette sauvegarde ?')) {
       state = d; selected = {};
       save(); loadCatalog();
@@ -249,5 +250,6 @@ $('restore').addEventListener('change', async e => {
 });
 
 loadCatalog();
-save();
+if (loaded.error === 'corrupt') tell('Données illisibles : une copie brute a été conservée, la session repart de zéro.');
+else save();
 window.addEventListener('pageshow', loadCatalog);
