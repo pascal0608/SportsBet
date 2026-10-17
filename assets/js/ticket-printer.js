@@ -1,4 +1,4 @@
-import { heightMm, layoutFor, loadTicketFonts, PAPER_MM, ticketPdf, ticketPng, ticketSvg } from './ticket-render.js';
+import { heightMm, layoutFor, loadTicketFonts, PAPER_MM, stampSvg, ticketPdf, ticketPng, ticketSvg } from './ticket-render.js';
 import { countUp, createFx, winSound } from './celebrate.js';
 import { money } from './format.js';
 
@@ -106,6 +106,17 @@ export function createPrinter({ getPlayer, getSound, setSound, notify }) {
     actions.querySelector('[data-ticket-action="print"]').focus();
   }
 
+  // Le tampon animé se superpose exactement à la zone réservée par le layout.
+  function placeStamp() {
+    const op = layout.ops.find(o => o.kind === 'stamp');
+    stamp.innerHTML = op ? stampSvg(op) : '';
+    if (!op) return;
+    stamp.style.setProperty('--stamp-x', `${op.x / layout.width * 100}%`);
+    stamp.style.setProperty('--stamp-y', `${op.y / layout.height * 100}%`);
+    stamp.style.setProperty('--stamp-w', `${(op.w + 16) / layout.width * 100}%`);
+    paper.parentElement.style.setProperty('--stamp-y', `${op.y / layout.height * 100}%`);
+  }
+
   function clearWin() {
     winTimers.forEach(clearTimeout);
     winTimers = [];
@@ -120,7 +131,6 @@ export function createPrinter({ getPlayer, getSound, setSound, notify }) {
     clearWin();
     const amount = '+' + money(ticket.payout);
     dialog.dataset.win = 'true';
-    document.getElementById('printer-stamp-amount').textContent = amount;
     winLive.textContent = `Ticket gagnant : ${amount}`;
     if (!full || reducedMotion()) {
       winAmount.textContent = amount;
@@ -147,7 +157,8 @@ export function createPrinter({ getPlayer, getSound, setSound, notify }) {
     clearWin();
     await loadTicketFonts();
     layout = layoutFor(ticket, getPlayer());
-    paper.innerHTML = ticketSvg(layout, `Ticket ${ticket.id}`);
+    paper.innerHTML = ticketSvg(layout, `Ticket ${ticket.id}`, { stamp: false });
+    placeStamp();
     shareBtn.hidden = !(navigator.canShare && navigator.share);
     renderSoundButton();
     if (!dialog.open) dialog.showModal();
@@ -205,7 +216,7 @@ export function createPrinter({ getPlayer, getSound, setSound, notify }) {
     try {
       if (action === 'close') return close();
       if (action === 'print') {
-        printRoot.innerHTML = paper.innerHTML;
+        printRoot.innerHTML = ticketSvg(layout, `Ticket ${current.id}`);
         pageStyle?.remove();
         pageStyle = document.createElement('style');
         pageStyle.textContent = `@page { size: ${PAPER_MM}mm ${Math.ceil(heightMm(layout))}mm; margin: 0; }`;
@@ -250,7 +261,9 @@ export function createPrinter({ getPlayer, getSound, setSound, notify }) {
     const target = returnFocus?.isConnected && returnFocus !== document.body && !returnFocus.disabled ? returnFocus : document.querySelector('[data-view-link="tickets"]');
     target?.focus();
   });
-  stamp.addEventListener('click', () => { if (current?.status === 'WON') celebrate(current, true); });
+  const replay = () => { if (current?.status === 'WON') celebrate(current, true); };
+  stamp.addEventListener('click', replay);
+  document.getElementById('printer-replay').addEventListener('click', replay);
   soundBtn.addEventListener('click', () => {
     setSound(!getSound());
     renderSoundButton();

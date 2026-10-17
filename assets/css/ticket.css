@@ -194,44 +194,61 @@
 .win-stamp {
   position: absolute;
   z-index: 3;
-  left: 50%;
-  top: 34%;
+  left: var(--stamp-x, 50%);
+  top: var(--stamp-y, 30%);
   display: none;
-  padding: 10px 26px 8px;
+  width: var(--stamp-w, 72%);
+  padding: 0;
   border: 0;
-  border-radius: 14px;
   background: transparent;
-  color: #0e8a49;
-  box-shadow: inset 0 0 0 5px currentColor, inset 0 0 0 9px transparent, inset 0 0 0 11px currentColor;
-  font-family: var(--font-display);
-  font-size: clamp(2.75rem, 13vw, 4.25rem);
-  font-weight: 800;
-  letter-spacing: .08em;
-  line-height: 1;
-  text-transform: uppercase;
   mix-blend-mode: multiply;
-  opacity: .94;
   cursor: pointer;
-  transform: translate(-50%, -50%) rotate(-14deg);
+  transform: translate(-50%, -50%);
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.09' numOctaves='4' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -5 3.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.09' numOctaves='4' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -5 3.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
-.win-stamp small { display: block; margin-top: 6px; font-size: .34em; letter-spacing: .1em; }
-.win-stamp:focus-visible { outline: 3px solid var(--accent); outline-offset: 6px; mix-blend-mode: normal; -webkit-mask-image: none; mask-image: none; }
-.printer[data-win] .win-stamp { display: block; }
+.win-stamp svg { display: block; width: 100%; height: auto; overflow: visible; }
+.printer[data-win] .win-stamp:not(:empty) { display: block; }
 .printer[data-win-stage="intro"] .win-stamp { opacity: 0; }
 .printer[data-win-stage="slam"] .win-stamp, .printer[data-win-stage="party"] .win-stamp { animation: stamp-slam 420ms cubic-bezier(.5, 0, .75, .4) both; }
 @keyframes stamp-slam {
-  0% { opacity: 0; transform: translate(-50%, -50%) rotate(-4deg) scale(3.2); }
-  75% { opacity: .95; transform: translate(-50%, -50%) rotate(-14deg) scale(.92); }
-  88% { transform: translate(-50%, -50%) rotate(-14deg) scale(1.04); }
-  100% { opacity: .9; transform: translate(-50%, -50%) rotate(-14deg) scale(1); }
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(9deg) scale(3); }
+  75% { opacity: 1; transform: translate(-50%, -50%) rotate(0) scale(.92); }
+  88% { transform: translate(-50%, -50%) scale(1.04); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
+
+.win-replay {
+  position: absolute;
+  z-index: 4;
+  top: 10px;
+  right: 10px;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid rgb(255 204 26 / .55);
+  border-radius: var(--r-pill);
+  background: rgb(11 23 48 / .9);
+  color: var(--accent);
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgb(0 0 0 / .35);
+  transition: transform var(--t-fast) var(--ease), background-color var(--t-fast) var(--ease);
+}
+.win-replay svg { width: 16px; height: 16px; transition: transform var(--t-slow) var(--ease); }
+.win-replay:hover { background: var(--bg); }
+.win-replay:hover svg { transform: rotate(-200deg); }
+.win-replay:active { transform: scale(.95); }
+.printer[data-win] .win-replay { display: inline-flex; }
+.printer[data-win-stage="intro"] .win-replay, .printer[data-win-stage="slam"] .win-replay { opacity: 0; }
+.printer[data-win-stage="party"] .win-replay { animation: fade-up var(--t-slow) var(--ease) 1.2s both; }
+
 .printer[data-win-stage="party"] .printer__window::after {
   content: '';
   position: absolute;
   left: 50%;
-  top: 34%;
+  top: var(--stamp-y, 30%);
   z-index: 2;
   width: 240px;
   height: 240px;
@@ -249,6 +266,7 @@
 
 @media (max-width: 600px) {
   .printer__actions { grid-template-columns: 1fr 1fr; }
+  .win-replay { top: 8px; right: 8px; min-height: 36px; padding: 0 12px; font-size: .875rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

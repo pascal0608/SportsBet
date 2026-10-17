@@ -29,7 +29,20 @@ export function loadTicketFonts() {
 
 export const layoutFor = (t, player) => ticketLayout(t, { player });
 
-export function ticketSvg(layout, label) {
+export const STAMP_INK = '#0e8a49';
+
+// Tampon dessiné dans un repère centré sur (0, 0), avant rotation.
+export function stampMarkup(o) {
+  const font = esc(FAMILY.display);
+  return `<rect x="${-o.w / 2}" y="${-o.h / 2}" width="${o.w}" height="${o.h}" rx="18" fill="none" stroke="${STAMP_INK}" stroke-width="8"/>`
+    + `<rect x="${-o.w / 2 + 14}" y="${-o.h / 2 + 14}" width="${o.w - 28}" height="${o.h - 28}" rx="9" fill="none" stroke="${STAMP_INK}" stroke-width="3"/>`
+    + `<text y="22" text-anchor="middle" font-family="${font}" font-size="100" font-weight="800" letter-spacing="6" fill="${STAMP_INK}">${esc(o.text)}</text>`
+    + `<text y="60" text-anchor="middle" font-family="${font}" font-size="30" font-weight="800" letter-spacing="2" fill="${STAMP_INK}">${esc(o.sub)}</text>`;
+}
+
+export const stampSvg = o => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-o.w / 2 - 8} ${-o.h / 2 - 8} ${o.w + 16} ${o.h + 16}" aria-hidden="true"><g transform="rotate(${o.angle})">${stampMarkup(o)}</g></svg>`;
+
+export function ticketSvg(layout, label, { stamp = true } = {}) {
   const { width, height, ops } = layout;
   const parts = [`<path d="${paperPath(width, height)}" fill="${PAPER}"/>`];
   for (const o of ops) {
@@ -41,6 +54,8 @@ export function ticketSvg(layout, label) {
       parts.push(`<line x1="${o.x1}" y1="${o.y}" x2="${o.x2}" y2="${o.y}" stroke="${INK}" stroke-width="${o.style === 'solid' ? 3 : 2}"${dash}/>`);
     } else if (o.kind === 'bar' || o.kind === 'box') {
       parts.push(`<rect x="${o.x}" y="${o.y}" width="${o.w}" height="${o.h}" fill="${INK}"/>`);
+    } else if (o.kind === 'stamp') {
+      if (stamp) parts.push(`<g transform="translate(${o.x} ${o.y}) rotate(${o.angle})" opacity=".92">${stampMarkup(o)}</g>`);
     } else if (o.kind === 'shamrock') {
       const k = o.size / SHAMROCK_BOX;
       parts.push(`<g transform="translate(${o.x} ${o.y}) scale(${k})" fill="${INK}">${[0, 120, -120].map(a => `<path transform="rotate(${a})" d="${LEAF_PATH}"/>`).join('')}<path d="${STEM_PATH}" fill="none" stroke="${INK}" stroke-width="7" stroke-linecap="round"/></g>`);
@@ -84,6 +99,26 @@ export async function ticketCanvas(layout, { background = null, scale = 2 } = {}
       ctx.setLineDash([]);
     } else if (o.kind === 'bar' || o.kind === 'box') {
       ctx.fillRect(o.x, o.y, o.w, o.h);
+    } else if (o.kind === 'stamp') {
+      ctx.save();
+      ctx.translate(o.x, o.y);
+      ctx.rotate(o.angle * Math.PI / 180);
+      ctx.globalAlpha = .92;
+      ctx.strokeStyle = ctx.fillStyle = STAMP_INK;
+      ctx.lineWidth = 8;
+      const box = (x, y, w, h, r) => { ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h); ctx.stroke(); };
+      box(-o.w / 2, -o.h / 2, o.w, o.h, 18);
+      ctx.lineWidth = 3;
+      box(-o.w / 2 + 14, -o.h / 2 + 14, o.w - 28, o.h - 28, 9);
+      ctx.textAlign = 'center';
+      ctx.letterSpacing = '6px';
+      ctx.font = `800 100px ${FAMILY.display}`;
+      ctx.fillText(o.text, 0, 22);
+      ctx.letterSpacing = '2px';
+      ctx.font = `800 30px ${FAMILY.display}`;
+      ctx.fillText(o.sub, 0, 60);
+      ctx.letterSpacing = '0px';
+      ctx.restore();
     } else if (o.kind === 'shamrock') {
       const k = o.size / SHAMROCK_BOX, leaf = new Path2D(LEAF_PATH);
       ctx.save();

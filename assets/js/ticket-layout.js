@@ -3,6 +3,8 @@ import { betType, chosen, decimal, formatDate, formatTime, marketLabel, sportLab
 // Unités logiques : 576 = largeur imprimable d'un rouleau 80 mm à 203 dpi.
 export const PAPER_WIDTH = 576;
 export const TEETH = 14;
+export const STAMP = { w: 400, h: 170, angle: -8 };
+const STAMP_ZONE = 236;
 const M = 32, R = PAPER_WIDTH - M, CENTER = PAPER_WIDTH / 2;
 const MONO_ADVANCE = 0.6;
 const cols = size => Math.floor((R - M) / (size * MONO_ADVANCE));
@@ -72,6 +74,13 @@ export function ticketLayout(t, { player = 'Joueur' } = {}) {
   y += 32; pair('TICKET', t.id);
   y += 32; pair('JOUEUR', String(player).toUpperCase());
   y += 24; rule();
+
+  // Ticket gagnant : zone dégagée sous l'en-tête pour le tampon, visible dès l'ouverture.
+  if (t.status === 'WON') {
+    ops.push({ kind: 'stamp', x: CENTER, y: y + STAMP_ZONE / 2, w: STAMP.w, h: STAMP.h, angle: STAMP.angle, text: 'GAGNÉ', sub: '+' + decimal(t.payout) + ' EUR' });
+    y += STAMP_ZONE;
+    rule();
+  }
 
   y += 52; text(betType(t.picks.length).toUpperCase(), CENTER, 46, { font: 'display', weight: 800, align: 'center' });
   y += 24; rule();

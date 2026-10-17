@@ -69,3 +69,18 @@ test('durée d\'impression : 1,8 s + 0,25 s par sélection, plafonnée à 4 s', 
   assert.equal(printDuration(4), 2800);
   assert.equal(printDuration(20), 4000);
 });
+
+test('ticket gagnant : tampon dans une zone vide sous l\'en-tête, absent sinon', () => {
+  for (const status of ['PENDING', 'LOST', 'VOID']) assert.equal(ticketLayout(ticket(status)).ops.some(o => o.kind === 'stamp'), false, status);
+  const layout = ticketLayout(ticket('WON', { payout: 31.85 }));
+  const stamp = layout.ops.find(o => o.kind === 'stamp');
+  assert.equal(stamp.text, 'GAGNÉ');
+  assert.equal(stamp.sub, '+31,85 EUR');
+  const a = Math.abs(stamp.angle) * Math.PI / 180;
+  const halfW = (stamp.w * Math.cos(a) + stamp.h * Math.sin(a)) / 2, halfH = (stamp.w * Math.sin(a) + stamp.h * Math.cos(a)) / 2;
+  assert.ok(stamp.x - halfW >= 0 && stamp.x + halfW <= PAPER_WIDTH, 'largeur');
+  const overlap = layout.ops.filter(o => o.kind === 'text' && o.y > stamp.y - halfH && o.y - o.size < stamp.y + halfH);
+  assert.deepEqual(overlap, [], 'aucun texte sous le tampon');
+  const plain = ticketLayout(ticket('PENDING'));
+  assert.ok(layout.height > plain.height);
+});

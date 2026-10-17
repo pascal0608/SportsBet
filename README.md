@@ -20,7 +20,7 @@ Application web personnelle de paris sportifs en **crédit virtuel**. Elle perme
 | Ticket | **Une seule sélection par match** : choisir un autre pari du même match remplace le précédent. Cote combinée = produit des cotes. Mise minimale 0,10 €, dans la limite du solde. |
 | Règlement | Automatique, dès qu'un résultat officiel est confirmé. Une sélection perdue fait perdre le ticket. Une sélection annulée compte pour une cote de 1. Si toutes les sélections sont annulées, le ticket est ANNULÉ et la mise remboursée. |
 | Favoris | L'étoile d'un match permet de suivre une équipe ou une compétition. La chip « Favoris » n'affiche que ces matchs ; la liste se gère dans Mon compte. Les favoris font partie des sauvegardes. |
-| Ticket gagnant | À la première ouverture d'un ticket gagné : tampon « GAGNÉ », confettis, pluie de pièces et compteur du gain (son si activé). Ensuite, version calme ; toucher le tampon rejoue la célébration. |
+| Ticket gagnant | Le ticket porte un tampon « GAGNÉ » dans une zone dédiée sous l'en-tête (aussi sur l'image, le PDF et l'impression). À la première ouverture : tampon qui s'écrase, confettis, pluie de pièces et compteur du gain (son si activé). Ensuite, version calme ; le bouton « Rejouer » sur le ticket relance la célébration. |
 | Matchs perso | Menu compte → Gestion des matchs : ajout d'un match et saisie manuelle de son résultat. |
 | Ticket imprimé | Animation d'imprimante thermique, puis Imprimer / Image PNG / PDF / Partager. Réouverture depuis « Mes tickets ». |
 

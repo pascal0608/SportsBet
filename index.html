@@ -298,7 +298,10 @@
     <div class="printer__window">
       <div class="printer__paper" id="printer-paper"></div>
       <div class="printer__head" id="printer-head" aria-hidden="true"></div>
-      <button class="win-stamp" type="button" id="printer-stamp" aria-label="Rejouer la célébration">Gagné<small class="num" id="printer-stamp-amount"></small></button>
+      <button class="win-stamp" type="button" id="printer-stamp" tabindex="-1" aria-hidden="true"></button>
+      <button class="win-replay" type="button" id="printer-replay">
+        <svg aria-hidden="true"><use href="#i-refresh"/></svg><span>Rejouer</span><span class="sr-only"> la célébration</span>
+      </button>
     </div>
   </div>
   <p class="printer__skip">Touchez l'écran ou appuyez sur Échap pour passer</p>
