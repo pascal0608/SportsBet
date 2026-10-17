@@ -75,7 +75,7 @@ test('ticket gagnant : tampon placé là où il recouvre le moins de texte, sans
   const layout = ticketLayout(ticket('WON', { payout: 31.85 }));
   const stamp = layout.ops.find(o => o.kind === 'stamp');
   assert.equal(stamp.text, 'GAGNÉ');
-  assert.equal(stamp.sub, '+31,85 EUR');
+  assert.equal(stamp.sub, undefined);
   assert.equal(layout.height, ticketLayout(ticket('PENDING')).height);
   const a = Math.abs(stamp.angle) * Math.PI / 180;
   const halfW = (stamp.w * Math.cos(a) + stamp.h * Math.sin(a)) * stamp.scale / 2, halfH = (stamp.w * Math.sin(a) + stamp.h * Math.cos(a)) * stamp.scale / 2;

@@ -36,8 +36,7 @@ export function stampMarkup(o) {
   const font = esc(FAMILY.display);
   return `<rect x="${-o.w / 2}" y="${-o.h / 2}" width="${o.w}" height="${o.h}" rx="18" fill="none" stroke="${STAMP_INK}" stroke-width="8"/>`
     + `<rect x="${-o.w / 2 + 14}" y="${-o.h / 2 + 14}" width="${o.w - 28}" height="${o.h - 28}" rx="9" fill="none" stroke="${STAMP_INK}" stroke-width="3"/>`
-    + `<text y="22" text-anchor="middle" font-family="${font}" font-size="100" font-weight="800" letter-spacing="6" fill="${STAMP_INK}">${esc(o.text)}</text>`
-    + `<text y="60" text-anchor="middle" font-family="${font}" font-size="30" font-weight="800" letter-spacing="2" fill="${STAMP_INK}">${esc(o.sub)}</text>`;
+    + `<text y="36" text-anchor="middle" font-family="${font}" font-size="104" font-weight="800" letter-spacing="6" fill="${STAMP_INK}">${esc(o.text)}</text>`;
 }
 
 // Boîte englobante du tampon tourné, pour que le masque d'encre ne rogne pas les coins.
@@ -122,11 +121,8 @@ export async function ticketCanvas(layout, { background = null, scale = 2 } = {}
       box(-o.w / 2 + 14, -o.h / 2 + 14, o.w - 28, o.h - 28, 9);
       ctx.textAlign = 'center';
       ctx.letterSpacing = '6px';
-      ctx.font = `800 100px ${FAMILY.display}`;
-      ctx.fillText(o.text, 0, 22);
-      ctx.letterSpacing = '2px';
-      ctx.font = `800 30px ${FAMILY.display}`;
-      ctx.fillText(o.sub, 0, 60);
+      ctx.font = `800 104px ${FAMILY.display}`;
+      ctx.fillText(o.text, 0, 36);
       ctx.letterSpacing = '0px';
       ctx.restore();
     } else if (o.kind === 'shamrock') {

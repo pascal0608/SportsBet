@@ -109,7 +109,7 @@ export function ticketLayout(t, { player = 'Joueur' } = {}) {
   const height = y + TEETH;
   if (t.status === 'WON') {
     const spot = stampSpot(ops, PAPER_WIDTH, height);
-    ops.push({ kind: 'stamp', ...spot, w: STAMP.w, h: STAMP.h, angle: STAMP.angle, scale: STAMP.scale, text: 'GAGNÉ', sub: '+' + decimal(t.payout) + ' EUR' });
+    ops.push({ kind: 'stamp', ...spot, w: STAMP.w, h: STAMP.h, angle: STAMP.angle, scale: STAMP.scale, text: 'GAGNÉ' });
   }
   return { width: PAPER_WIDTH, height, ops };
 }
