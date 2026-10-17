@@ -1,16 +1,18 @@
 import { heightMm, layoutFor, loadTicketFonts, PAPER_MM, ticketPdf, ticketPng, ticketSvg } from './ticket-render.js';
 
 const LINE_UNITS = 30;
+const FEED_DELAY = 260;
+const HEAD_BAND = 30;
 
 export const printDuration = picks => Math.min(4000, 1800 + 250 * picks);
 
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-function feedSound(durationMs, steps) {
+function feedSound(durationMs, steps, delayMs = 0) {
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
   if (!AudioCtx) return () => {};
   const ctx = new AudioCtx();
-  const t0 = ctx.currentTime + .02, end = t0 + durationMs / 1000;
+  const start = ctx.currentTime + .02, t0 = start + delayMs / 1000, end = t0 + durationMs / 1000;
   const noise = ctx.createBuffer(1, ctx.sampleRate * .03, ctx.sampleRate);
   const data = noise.getChannelData(0);
   for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
@@ -24,12 +26,12 @@ function feedSound(durationMs, steps) {
   motor.frequency.value = 92;
   motorFilter.type = 'lowpass';
   motorFilter.frequency.value = 380;
-  motorGain.gain.setValueAtTime(0, t0);
-  motorGain.gain.linearRampToValueAtTime(.05, t0 + .05);
+  motorGain.gain.setValueAtTime(0, start);
+  motorGain.gain.linearRampToValueAtTime(.05, start + .05);
   motorGain.gain.setValueAtTime(.05, end - .05);
   motorGain.gain.linearRampToValueAtTime(0, end);
   motor.connect(motorFilter).connect(motorGain).connect(out);
-  motor.start(t0);
+  motor.start(start);
   motor.stop(end);
 
   const head = ctx.createBiquadFilter();
@@ -73,15 +75,15 @@ export function createPrinter({ getPlayer, getSound, setSound, notify }) {
   const actions = document.getElementById('printer-actions');
   const soundBtn = document.getElementById('printer-sound');
   const shareBtn = actions.querySelector('[data-ticket-action="share"]');
+  const head = document.getElementById('printer-head');
   const printRoot = document.getElementById('print-root');
-  let current = null, layout = null, printing = false, stopSound = null, returnFocus = null, pageStyle = null;
+  let current = null, layout = null, printing = false, stopSound = null, returnFocus = null, pageStyle = null, feed = [], follow = 0;
 
   const filename = ext => `SPORTS_BET_${current.id}.${ext}`;
 
   function renderSoundButton() {
     const on = getSound();
     soundBtn.setAttribute('aria-pressed', String(on));
-    soundBtn.firstElementChild.textContent = on ? '🔊' : '🔈';
   }
 
   function finish() {
@@ -89,7 +91,9 @@ export function createPrinter({ getPlayer, getSound, setSound, notify }) {
     printing = false;
     stopSound?.();
     stopSound = null;
-    paper.style.animation = '';
+    cancelAnimationFrame(follow);
+    for (const a of feed) a.cancel();
+    feed = [];
     dialog.dataset.state = 'done';
     actions.querySelector('[data-ticket-action="print"]').focus();
   }
@@ -115,10 +119,35 @@ export function createPrinter({ getPlayer, getSound, setSound, notify }) {
     printing = true;
     dialog.dataset.state = 'printing';
     soundBtn.focus();
-    paper.style.animation = 'none';
-    void paper.offsetWidth;
-    paper.style.animation = `print-feed ${duration}ms steps(${steps}, end) forwards`;
-    if (getSound()) stopSound = feedSound(duration, steps);
+    dialog.scrollTop = 0;
+    feed = startFeed(duration, steps);
+    feed[0].onfinish = finish;
+    followHead();
+    if (getSound()) stopSound = feedSound(duration, steps, FEED_DELAY);
+  }
+
+  // Avance ligne par ligne : déplacement rapide puis pause, comme une tête thermique.
+  function startFeed(duration, steps) {
+    const height = paper.getBoundingClientRect().height;
+    const clip = [], band = [];
+    for (let i = 0; i < steps; i++) {
+      const a = i / steps, b = (i + 1) / steps, moved = a + (b - a) * .45;
+      const easing = 'cubic-bezier(.25,.8,.35,1)';
+      clip.push({ offset: a, clipPath: `inset(0 0 ${(1 - a) * 100}% 0)`, easing }, { offset: moved, clipPath: `inset(0 0 ${(1 - b) * 100}% 0)` });
+      band.push({ offset: a, transform: `translateY(${a * height - HEAD_BAND}px)`, easing }, { offset: moved, transform: `translateY(${b * height - HEAD_BAND}px)` });
+    }
+    clip.push({ offset: 1, clipPath: 'inset(0 0 0% 0)' });
+    band.push({ offset: 1, transform: `translateY(${height - HEAD_BAND}px)` });
+    const timing = { duration, delay: FEED_DELAY, fill: 'both' };
+    return [paper.animate(clip, timing), head.animate(band, timing)];
+  }
+
+  // Garde la tête d'impression visible sur les tickets plus hauts que l'écran.
+  function followHead() {
+    const limit = dialog.clientHeight * .72;
+    const bottom = head.getBoundingClientRect().bottom;
+    if (bottom > limit) dialog.scrollTop += bottom - limit;
+    if (printing) follow = requestAnimationFrame(followHead);
   }
 
   function close() {
@@ -156,7 +185,6 @@ export function createPrinter({ getPlayer, getSound, setSound, notify }) {
     }
   }
 
-  paper.addEventListener('animationend', e => { if (e.animationName === 'print-feed') finish(); });
   dialog.addEventListener('click', e => {
     const button = e.target.closest('[data-ticket-action]');
     if (button) return run(button.dataset.ticketAction);

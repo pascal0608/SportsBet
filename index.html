@@ -269,26 +269,31 @@
 
 <dialog class="printer" id="printer" aria-labelledby="printer-title">
   <h2 class="sr-only" id="printer-title">Ticket</h2>
+  <div class="printer__bar">
+    <button class="printer__sound" type="button" id="printer-sound" aria-pressed="false">
+      <span class="printer__sound-icon" aria-hidden="true"></span><span class="printer__sound-label">Son</span>
+    </button>
+    <button class="printer__close" type="button" data-ticket-action="close">
+      <svg aria-hidden="true"><use href="#i-close"/></svg><span>Fermer</span>
+    </button>
+  </div>
   <div class="printer__stage">
     <div class="printer__machine" aria-hidden="true">
-      <div class="printer__top"><span class="printer__led"></span><span class="printer__brand">SPORTS BET</span></div>
+      <div class="printer__top"><span class="printer__led"></span><span class="printer__vents"></span><span class="printer__brand">SPORTS BET</span></div>
       <div class="printer__slot"></div>
     </div>
     <div class="printer__window">
       <div class="printer__paper" id="printer-paper"></div>
+      <div class="printer__head" id="printer-head" aria-hidden="true"></div>
     </div>
   </div>
-  <p class="printer__skip" id="printer-skip">Touchez l'écran ou appuyez sur Échap pour passer</p>
+  <p class="printer__skip">Touchez l'écran ou appuyez sur Échap pour passer</p>
   <div class="printer__actions" id="printer-actions">
     <button class="btn btn--accent" type="button" data-ticket-action="print">Imprimer</button>
-    <button class="btn btn--outline-light" type="button" data-ticket-action="png">Enregistrer l'image</button>
+    <button class="btn btn--outline-light" type="button" data-ticket-action="png">Image</button>
     <button class="btn btn--outline-light" type="button" data-ticket-action="pdf">PDF</button>
     <button class="btn btn--outline-light" type="button" data-ticket-action="share" hidden>Partager</button>
-    <button class="btn btn--ghost-light" type="button" data-ticket-action="close">Fermer</button>
   </div>
-  <button class="printer__sound icon-btn icon-btn--dark" type="button" id="printer-sound" aria-pressed="false">
-    <span aria-hidden="true">🔈</span><span class="sr-only">Son de l'imprimante</span>
-  </button>
 </dialog>
 
 <div class="print-root" id="print-root" aria-hidden="true"></div>

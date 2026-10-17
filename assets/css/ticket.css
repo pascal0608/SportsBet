@@ -4,76 +4,145 @@
   height: 100dvh;
   max-height: 100dvh;
   margin: 0;
-  padding: var(--s6) var(--s4) var(--s8);
+  padding: 0 var(--s4) 0;
   border: 0;
-  background: radial-gradient(120% 80% at 50% 0%, #1a2c56 0%, var(--bg) 60%);
+  background: radial-gradient(120% 70% at 50% 0%, #1d3263 0%, var(--bg) 62%);
   color: var(--text-inverse);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
-.printer[open] { display: flex; flex-direction: column; align-items: center; gap: var(--s5); }
+.printer[open] { display: flex; flex-direction: column; align-items: center; }
 .printer::backdrop { background: var(--bg); }
 
-.printer__stage { width: min(380px, calc(100vw - var(--s8))); }
+/* ---------- Barre haute : son + fermer ---------- */
+.printer__bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: calc(100% + var(--s8));
+  margin: 0 calc(-1 * var(--s4));
+  padding: var(--s3) var(--s4);
+  background: linear-gradient(to bottom, rgb(11 23 48 / .9) 60%, transparent);
+}
+.printer__close, .printer__sound {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: var(--tap);
+  padding: 0 var(--s4);
+  border: 1px solid rgb(255 255 255 / .22);
+  border-radius: var(--r-pill);
+  background: rgb(255 255 255 / .1);
+  color: var(--text-inverse);
+  font-weight: 700;
+  backdrop-filter: blur(6px);
+  transition: background-color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+}
+.printer__close:hover, .printer__sound:hover { background: rgb(255 255 255 / .2); border-color: rgb(255 255 255 / .45); }
+.printer__close:active, .printer__sound:active { transform: scale(.96); }
+.printer__close svg { width: 18px; height: 18px; }
+.printer__sound { color: var(--text-inverse-muted); font-weight: 600; }
+.printer__sound[aria-pressed="true"] { color: var(--accent); border-color: rgb(255 204 26 / .5); }
+.printer__sound-icon { width: 18px; height: 18px; background: currentColor; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 9h4l5-4v14l-5-4H4z'/%3E%3C/svg%3E") center / contain no-repeat; }
+.printer__sound[aria-pressed="true"] .printer__sound-icon { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 9h4l5-4v14l-5-4H4z'/%3E%3Cpath d='M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E"); }
+
+/* ---------- Imprimante ---------- */
+.printer__stage { width: min(380px, 100%); margin-top: var(--s2); }
 .printer__machine {
   position: relative;
-  z-index: 1;
-  height: 96px;
-  border-radius: 20px 20px 12px 12px;
-  background: linear-gradient(180deg, #34426a 0%, #222d4c 70%, #1b2440 100%);
-  box-shadow: 0 2px 0 #46557f inset, 0 18px 30px rgb(0 0 0 / .45);
+  z-index: 2;
+  height: 104px;
+  border-radius: 22px 22px 14px 14px;
+  background: linear-gradient(180deg, #3a4a76 0%, #26325a 55%, #1c2545 100%);
+  box-shadow: 0 2px 0 #52639a inset, 0 -2px 0 #141b33 inset, 0 20px 34px rgb(0 0 0 / .5);
 }
-.printer__top { display: flex; align-items: center; gap: var(--s2); padding: var(--s4) var(--s5); }
+.printer__top { display: flex; align-items: center; gap: var(--s3); padding: var(--s4) var(--s5); }
 .printer__led { width: 10px; height: 10px; border-radius: 50%; background: var(--brand); box-shadow: 0 0 10px var(--brand); }
-.printer[data-state="printing"] .printer__led { animation: led 300ms steps(2) infinite; }
-@keyframes led { 50% { opacity: .3; } }
-.printer__brand { margin-left: auto; font-family: var(--font-display); font-weight: 800; letter-spacing: .12em; color: #8d9cc4; }
-.printer__slot { position: absolute; left: 16px; right: 16px; bottom: 16px; height: 10px; border-radius: 5px; background: #04060c; box-shadow: inset 0 3px 4px #000, 0 1px 0 #4c5b86; }
+.printer__vents { width: 54px; height: 10px; background: repeating-linear-gradient(90deg, #141b33 0 3px, transparent 3px 7px); border-radius: 2px; opacity: .8; }
+.printer__brand { margin-left: auto; font-family: var(--font-display); font-weight: 800; letter-spacing: .14em; color: #93a3cf; }
+.printer__slot {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 18px;
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(#000, #0b1020);
+  box-shadow: inset 0 3px 5px #000, 0 1px 0 #5a6ba3;
+}
+.printer[data-state="printing"] .printer__machine { animation: buzz 90ms linear infinite; }
+.printer[data-state="printing"] .printer__led { animation: led 260ms steps(2) infinite; }
+@keyframes buzz { 25% { transform: translate(.5px, .3px); } 75% { transform: translate(-.5px, -.2px); } }
+@keyframes led { 50% { opacity: .25; } }
 
-.printer__window { position: relative; margin: -22px 26px 0; }
+/* ---------- Papier ---------- */
+.printer__window { position: relative; z-index: 1; margin: -24px 28px 0; }
+.printer__window::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 2;
+  height: 22px;
+  background: linear-gradient(rgb(0 0 0 / .45), transparent);
+  pointer-events: none;
+}
 .printer__paper { transform-origin: 50% 0; filter: drop-shadow(0 6px 10px rgb(0 0 0 / .3)); }
 .printer[data-state="printing"] .printer__paper { clip-path: inset(0 0 100% 0); }
-.printer[data-state="done"] .printer__paper { animation: paper-drop 520ms var(--ease) forwards; }
+.printer[data-state="done"] .printer__paper { animation: paper-tear 700ms var(--ease) forwards; }
 .ticket-svg { display: block; width: 100%; height: auto; }
 
-@keyframes print-feed {
-  from { clip-path: inset(0 0 100% 0); }
-  to { clip-path: inset(0 0 0 0); }
+/* Bande d'encre fraîche : les dernières lignes imprimées apparaissent pâles puis foncent. */
+.printer__head {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 1;
+  height: 30px;
+  opacity: 0;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgb(255 253 244 / 0) 0%, rgb(255 253 244 / .82) 92%, rgb(120 110 90 / .35) 100%);
+  box-shadow: 0 7px 9px -5px rgb(0 0 0 / .55);
 }
-@keyframes paper-drop {
+.printer[data-state="printing"] .printer__head { opacity: 1; }
+
+@keyframes paper-tear {
   0% { transform: translateY(0); }
-  55% { transform: translateY(22px) rotate(-1.4deg); }
-  100% { transform: translateY(14px) rotate(-.8deg); filter: drop-shadow(0 22px 26px rgb(0 0 0 / .5)); }
+  10% { transform: translateY(-6px); }
+  22% { transform: translateY(2px); }
+  60% { transform: translateY(24px) rotate(-1.6deg); }
+  100% { transform: translateY(16px) rotate(-.9deg); filter: drop-shadow(0 24px 28px rgb(0 0 0 / .55)); }
 }
 
-.printer__skip { color: var(--text-inverse-muted); font-size: .875rem; }
+.printer__skip { margin: var(--s5) 0 0; color: var(--text-inverse-muted); font-size: .875rem; }
 .printer:not([data-state="printing"]) .printer__skip { display: none; }
 
+/* ---------- Actions ---------- */
 .printer__actions {
   position: sticky;
-  bottom: calc(-1 * var(--s8));
-  z-index: 2;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  bottom: 0;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: var(--s2);
   width: min(560px, 100%);
-  margin-top: var(--s4);
-  padding: var(--s4) 0 var(--s8);
-  background: linear-gradient(to top, var(--bg) 70%, transparent);
+  margin-top: auto;
+  padding: var(--s8) 0 calc(var(--s5) + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--bg) 72%, transparent);
 }
 .printer[data-state="printing"] .printer__actions { visibility: hidden; }
-.printer[data-state="done"] .printer__actions { animation: fade-up var(--t-slow) var(--ease) 300ms both; }
+.printer[data-state="done"] .printer__actions { animation: fade-up var(--t-slow) var(--ease) 450ms both; }
 @keyframes fade-up { from { opacity: 0; transform: translateY(8px); } }
-
-.printer__sound { position: fixed; top: var(--s3); right: var(--s3); z-index: 5; }
-@media (max-width: 600px) { .printer__stage { padding-top: var(--s10); } }
-.printer__sound span[aria-hidden] { font-size: 1.25rem; }
 
 .print-root { display: none; }
 
+@media (max-width: 600px) {
+  .printer__actions { grid-template-columns: 1fr 1fr; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .printer[data-state="done"] .printer__paper { animation: none; transform: translateY(14px) rotate(-.8deg); }
+  .printer[data-state="done"] .printer__paper { animation: none; transform: translateY(16px) rotate(-.9deg); }
 }
 
 @media print {
