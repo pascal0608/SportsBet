@@ -1,4 +1,4 @@
-import { applyOfficialResults, countBy, fetchCatalog, filterMatches, freshness, isClosed, mergeCatalog } from './catalog.js';
+import { applyOfficialResults, countBy, fetchCatalog, filterMatches, freshness, groupByEvent, isClosed, mergeCatalog } from './catalog.js';
 import { checkBet, combinedOdd, placeBet, potentialPayout, readSlip, toggleSelection } from './betslip.js';
 import { pickVerdict, settleTickets } from './settle.js';
 import { BACKUP_FILENAME, backupJson, KEY, load, MAX_BACKUP_BYTES, parseBackup, persist, playerName, pruneOfficialResults, recordActivity } from './state.js';
@@ -76,7 +76,7 @@ function renderFreshness() {
 
 function renderCatalog() {
   const now = Date.now();
-  const open = app.state.matches.filter(m => !isClosed(m, now));
+  const open = groupByEvent(app.state.matches.filter(m => !isClosed(m, now))).map(g => g.main);
   const sportCounts = countBy(open, m => sportLabel(m.sport));
   if (app.filters.sport && !sportCounts.has(app.filters.sport)) app.filters.sport = '';
   renderSportChips($('sport-chips'), sportCounts, open.length, app.filters.sport);
@@ -85,7 +85,7 @@ function renderCatalog() {
   if (app.filters.competition && !compCounts.has(app.filters.competition)) app.filters.competition = '';
   renderCompetitions($('competition'), compCounts, app.filters.competition);
 
-  const list = filterMatches(app.state.matches, app.filters, now);
+  const list = groupByEvent(filterMatches(app.state.matches, app.filters, now));
   const el = $('matches');
   const more = $('more-matches');
   more.hidden = list.length <= app.limit;
@@ -277,9 +277,8 @@ const printer = createPrinter({
 function onClick(e) {
   const odd = e.target.closest('.odd[data-match]');
   if (odd) {
-    toggleSelection(app.selected, odd.dataset.match, odd.dataset.pick);
+    for (const id of toggleSelection(app.selected, odd.dataset.match, odd.dataset.pick, app.state.matches)) updateOdds($('matches'), id, app.selected[id]);
     saveSelection(app.selected);
-    updateOdds($('matches'), odd.dataset.match, app.selected[odd.dataset.match]);
     return renderBetslip();
   }
   const remove = e.target.closest('[data-remove]');

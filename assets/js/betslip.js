@@ -1,12 +1,27 @@
-import { isCatalogFresh, isClosed, isOfficialId, options } from './catalog.js';
+import { eventKey, isCatalogFresh, isClosed, isOfficialId, options } from './catalog.js';
 import { round2 } from './format.js';
 import { recordActivity } from './state.js';
 
 export const MIN_STAKE = 0.1;
 
-export function toggleSelection(selected, matchId, key) {
-  if (selected[matchId] === key) delete selected[matchId];
-  else selected[matchId] = key;
+// Une seule sélection par événement : choisir un autre marché du même match remplace la sélection.
+// Renvoie les ids de marchés dont l'état a changé.
+export function toggleSelection(selected, matchId, key, matches = []) {
+  if (selected[matchId] === key) {
+    delete selected[matchId];
+    return [matchId];
+  }
+  const byId = new Map(matches.map(m => [m.id, m]));
+  const event = byId.has(matchId) ? eventKey(byId.get(matchId)) : matchId;
+  const changed = [matchId];
+  for (const id of Object.keys(selected)) {
+    if (id !== matchId && byId.has(id) && eventKey(byId.get(id)) === event) {
+      delete selected[id];
+      changed.push(id);
+    }
+  }
+  selected[matchId] = key;
+  return changed;
 }
 
 const matchName = m => m.home + (m.away ? ' - ' + m.away : '');
@@ -22,7 +37,7 @@ export function readSlip(matches, selected, now = Date.now()) {
       continue;
     }
     picks.push({
-      id: m.id, home: m.home, away: m.away, pick: o.key, label: o.label, short: o.short, matchNumber: m.matchNumber,
+      id: m.id, eventId: m.eventId, home: m.home, away: m.away, pick: o.key, label: o.label, short: o.short, matchNumber: m.matchNumber,
       odd: o.odd, deadline: m.deadline, market: m.market, sport: m.sport, competition: m.competition, resultPath: m.resultPath,
     });
   }
@@ -41,6 +56,8 @@ export function checkBet({ picks, unavailable = [], stake, balance, catalogFetch
     return refuse('closed', `Paris clos : ${names}. Retire ${unavailable.length > 1 ? 'ces sélections' : 'cette sélection'} du ticket.`);
   }
   if (!picks.length) return refuse('empty', 'Ajoute au moins une sélection.');
+  const events = picks.map(p => p.eventId != null ? 'e' + p.eventId : p.id);
+  if (new Set(events).size < events.length) return refuse('same-event', 'Une seule sélection par match dans un ticket.');
   if (picks.some(p => isOfficialId(p.id)) && !isCatalogFresh(catalogFetchedAt, now))
     return refuse('stale', 'Catalogue de plus de 6 h : nouveaux tickets suspendus. Actualise la liste.');
   const rounded = Number.isFinite(stake) ? round2(stake) : NaN;

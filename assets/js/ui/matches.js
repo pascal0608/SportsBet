@@ -1,4 +1,4 @@
-import { options } from '../catalog.js';
+import { groupMarkets, options } from '../catalog.js';
 import { closingLabel, decimal, esc, isMainMarket, marketLabel, matchTitle, outcomeCode, outcomeLabel, sportIcon, sportLabel, teamsOf } from '../format.js';
 
 const INLINE_MAX = 3;
@@ -12,7 +12,29 @@ function oddButton(m, o, selectedKey) {
     + `<span class="odd__label">${esc(visible)}</span><span class="odd__value num">${decimal(o.odd)}</span></button>`;
 }
 
-export function matchCard(m, selectedKey, now = Date.now()) {
+const OPEN_FAMILY_MAX = 6;
+
+function family({ label, markets }, selected) {
+  const buttons = markets.flatMap(m => options(m).map(o => oddButton(m, o, selected[m.id]))).join('');
+  const count = markets.reduce((n, m) => n + options(m).length, 0);
+  const group = `class="odds odds--list" role="group" aria-label="${esc(label)}"`;
+  if (count <= OPEN_FAMILY_MAX) return `<section class="market"><h4 class="market__title">${esc(label)}</h4><div ${group}>${buttons}</div></section>`;
+  const open = markets.some(m => selected[m.id]) ? ' open' : '';
+  return `<details class="market"${open}><summary class="market__title">${esc(label)} <span class="market__count">${count} choix</span></summary><div ${group}>${buttons}</div></details>`;
+}
+
+function extraMarkets(extras, selected) {
+  if (!extras.length) return '';
+  const open = extras.some(m => selected[m.id]) ? ' open' : '';
+  return `<details class="more more--markets"${open}><summary>+${extras.length} paris<span class="sr-only"> supplémentaires</span></summary>`
+    + `<div class="markets">${groupMarkets(extras).map(f => family(f, selected)).join('')}</div></details>`;
+}
+
+export function eventCard({ main, extras }, selected, now = Date.now()) {
+  return matchCard(main, selected[main.id], now, extraMarkets(extras, selected));
+}
+
+export function matchCard(m, selectedKey, now = Date.now(), after = '') {
   const outs = options(m);
   const teams = teamsOf(m);
   const deadline = m.deadline || m.startDate;
@@ -28,12 +50,12 @@ export function matchCard(m, selectedKey, now = Date.now()) {
     ? `<div class="odds" ${group}>${outs.map(o => oddButton(m, o, selectedKey)).join('')}</div>`
     : `<details class="more"${outs.some(o => o.key === selectedKey) ? ' open' : ''}><summary>Voir les ${outs.length} choix</summary><div class="odds odds--list" ${group}>${outs.map(o => oddButton(m, o, selectedKey)).join('')}</div></details>`;
   return `<article class="match" data-id="${esc(m.id)}"><div class="match__info"><p class="match__meta">${meta}</p>`
-    + `<h3 class="match__teams">${teams.map(t => `<span>${esc(t)}</span>`).join('')}</h3>${market}</div>${odds}</article>`;
+    + `<h3 class="match__teams">${teams.map(t => `<span>${esc(t)}</span>`).join('')}</h3>${market}</div>${odds}${after}</article>`;
 }
 
-export function renderMatches(el, matches, selected, limit, now = Date.now()) {
+export function renderMatches(el, groups, selected, limit, now = Date.now()) {
   el.setAttribute('aria-busy', 'false');
-  el.innerHTML = matches.slice(0, limit).map(m => matchCard(m, selected[m.id], now)).join('');
+  el.innerHTML = groups.slice(0, limit).map(g => eventCard(g, selected, now)).join('');
 }
 
 export function renderMatchesEmpty(el, { title, text, action, actionLabel }) {

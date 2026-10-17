@@ -47,9 +47,15 @@ export function load(storage) {
   }
 }
 
+// Les marchés annexes du catalogue sont rechargés à chaque ouverture : seuls ceux d'un ticket sont conservés.
+export function serializable(state) {
+  const used = new Set(state.tickets.flatMap(t => t.picks.map(p => p.id)));
+  return { ...state, matches: state.matches.filter(m => !m.extra || used.has(m.id)) };
+}
+
 export function persist(storage, state) {
   try {
-    storage.setItem(KEY, JSON.stringify(state));
+    storage.setItem(KEY, JSON.stringify(serializable(state)));
     return true;
   } catch {
     return false;
@@ -84,6 +90,6 @@ export function parseBackup(text) {
 export const MAX_BACKUP_BYTES = 10000000;
 export const BACKUP_FILENAME = 'SPORTS_BET_sauvegarde.json';
 
-export const backupJson = state => JSON.stringify(state, null, 2);
+export const backupJson = state => JSON.stringify(serializable(state), null, 2);
 
 export const playerName = state => (state.playerName || '').trim() || DEFAULT_PLAYER;

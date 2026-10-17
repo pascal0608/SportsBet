@@ -28,6 +28,33 @@ export function filterMatches(matches, { q = '', sport = '', competition = '', i
     && (!q || [m.home, m.away, m.competition].join(' ').toLowerCase().includes(q)));
 }
 
+export const eventKey = m => m.eventId != null ? 'e' + m.eventId : m.id;
+
+// Regroupe les marchés d'un même événement ; le marché principal est celui de la liste (sans `extra`).
+export function groupByEvent(matches) {
+  const groups = new Map();
+  for (const m of matches) {
+    const key = eventKey(m);
+    if (!groups.has(key)) groups.set(key, { key, main: null, extras: [] });
+    const g = groups.get(key);
+    if (!m.extra && !g.main) g.main = m;
+    else g.extras.push(m);
+  }
+  return [...groups.values()].map(g => g.main ? g : { ...g, main: g.extras[0], extras: g.extras.slice(1) });
+}
+
+export const marketFamily = label => String(label || '').replace(/\s[+-]\d+(,\d+)?$/, '');
+
+export function groupMarkets(markets) {
+  const families = new Map();
+  for (const m of markets) {
+    const label = marketFamily(m.market);
+    if (!families.has(label)) families.set(label, []);
+    families.get(label).push(m);
+  }
+  return [...families].map(([label, list]) => ({ label, markets: list }));
+}
+
 export function countBy(matches, key) {
   const counts = new Map();
   for (const m of matches) {
