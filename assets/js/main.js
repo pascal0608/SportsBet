@@ -8,7 +8,8 @@ import { createPrinter } from './ticket-printer.js';
 import { toast } from './ui/toasts.js';
 import { confirmDialog, initDialogs } from './ui/dialogs.js';
 import { renderBalance, renderTicketCount, renderView } from './ui/header.js';
-import { renderCompetitions, renderMatches, renderMatchesEmpty, renderSkeleton, renderSportChips, updateOdds } from './ui/matches.js';
+import { FAVORITES, renderCompetitions, renderMatches, renderMatchesEmpty, renderSkeleton, renderSportChips, updateOdds } from './ui/matches.js';
+import { favoriteSet, isFavoriteMatch, toggleFavorite } from './favorites.js';
 import { isSlipOpen, renderSlip, setSlipOpen } from './ui/betslip.js';
 import { renderHistory } from './ui/history.js';
 import { renderAccount, renderManualResults } from './ui/account.js';
@@ -26,6 +27,7 @@ const app = {
   filters: { sport: '', competition: '', q: '' },
   limit: PAGE,
   historyFilter: 'ALL',
+  favOpen: null,
   catalog: { loading: false, loadedOnce: false, error: false, partial: false },
   saveWarned: false,
 };
@@ -76,25 +78,32 @@ function renderFreshness() {
 
 function renderCatalog() {
   const now = Date.now();
+  const favs = favoriteSet(app.state);
+  const favOnly = app.filters.sport === FAVORITES;
   const open = groupByEvent(app.state.matches.filter(m => !isClosed(m, now))).map(g => g.main);
+  const followed = open.filter(m => isFavoriteMatch(favs, m));
   const sportCounts = countBy(open, m => sportLabel(m.sport));
-  if (app.filters.sport && !sportCounts.has(app.filters.sport)) app.filters.sport = '';
-  renderSportChips($('sport-chips'), sportCounts, open.length, app.filters.sport);
-  const inSport = app.filters.sport ? open.filter(m => sportLabel(m.sport) === app.filters.sport) : open;
+  if (app.filters.sport && !favOnly && !sportCounts.has(app.filters.sport)) app.filters.sport = '';
+  renderSportChips($('sport-chips'), sportCounts, open.length, app.filters.sport, followed.length);
+  const inSport = favOnly ? followed : app.filters.sport ? open.filter(m => sportLabel(m.sport) === app.filters.sport) : open;
   const compCounts = countBy(inSport, m => m.competition);
   if (app.filters.competition && !compCounts.has(app.filters.competition)) app.filters.competition = '';
   renderCompetitions($('competition'), compCounts, app.filters.competition);
 
-  const list = groupByEvent(filterMatches(app.state.matches, app.filters, now));
+  const list = favOnly
+    ? groupByEvent(filterMatches(app.state.matches, { ...app.filters, sport: '' }, now)).filter(g => isFavoriteMatch(favs, g.main))
+    : groupByEvent(filterMatches(app.state.matches, app.filters, now));
   const el = $('matches');
   const more = $('more-matches');
   more.hidden = list.length <= app.limit;
   more.textContent = `Afficher plus de matchs (${Math.max(0, list.length - app.limit)} restants)`;
   $('match-count').textContent = list.length ? `${list.length} match${list.length > 1 ? 's' : ''} ouvert${list.length > 1 ? 's' : ''}` : '';
 
-  if (list.length) return renderMatches(el, list, app.selected, app.limit, now);
+  if (list.length) return renderMatches(el, list, app.selected, app.limit, now, { set: favs, open: app.favOpen });
   if (!app.catalog.loadedOnce) return renderSkeleton(el);
   if (!open.length && app.catalog.error) return renderMatchesEmpty(el, { title: 'Catalogue indisponible', text: 'Vérifie ta connexion puis réessaie.', action: 'refresh', actionLabel: 'Réessayer' });
+  if (favOnly && !favs.size) return renderMatchesEmpty(el, { title: 'Aucun favori pour l’instant', text: 'Touche l’étoile d’un match pour suivre une équipe ou une compétition.' });
+  if (favOnly && !followed.length) return renderMatchesEmpty(el, { title: 'Rien pour tes favoris', text: 'Aucun match ouvert pour tes équipes et compétitions suivies.', action: 'reset-filters', actionLabel: 'Voir tous les matchs' });
   if (!open.length) return renderMatchesEmpty(el, { title: 'Aucun match ouvert', text: 'Le catalogue ne contient pas de match ouvert pour le moment.', action: 'refresh', actionLabel: 'Actualiser' });
   renderMatchesEmpty(el, { title: 'Aucun match ne correspond', text: 'Essaie une autre recherche ou un autre sport.', action: 'reset-filters', actionLabel: 'Réinitialiser les filtres' });
 }
@@ -278,6 +287,25 @@ function onClick(e) {
   const odd = e.target.closest('.odd[data-match]');
   if (odd) {
     for (const id of toggleSelection(app.selected, odd.dataset.match, odd.dataset.pick, app.state.matches)) updateOdds($('matches'), id, app.selected[id]);
+function toggleFav(chip) {
+  const fav = { type: chip.dataset.favType, sport: chip.dataset.favSport, name: chip.dataset.favName };
+  const cardId = chip.closest('.match')?.dataset.id;
+  let saved;
+  try {
+    saved = commit(state => ({ added: toggleFavorite(state, fav) }), 'Sauvegarde impossible : favori non enregistré.');
+  } catch {
+    return toast('100 favoris au maximum.', 'error');
+  }
+  if (!saved) return;
+  const { added } = saved;
+  const what = fav.type === 'competition' ? `La compétition ${fav.name}` : fav.name;
+  toast(added ? `${what} ajouté${fav.type === 'competition' ? 'e' : ''} à tes favoris.` : `${what} retiré${fav.type === 'competition' ? 'e' : ''} de tes favoris.`, added ? 'success' : 'info');
+  renderCatalog();
+  if ($('account-dialog').open) renderAccount(app.state, app.prefs);
+  const selector = `[data-fav-type="${fav.type}"][data-fav-name="${CSS.escape(fav.name)}"]`;
+  ($('matches').querySelector(`.match[data-id="${CSS.escape(cardId || '')}"] ${selector}`) || $('matches').querySelector(selector))?.focus();
+}
+
     saveSelection(app.selected);
     return renderBetslip();
   }
@@ -302,6 +330,26 @@ function onClick(e) {
   if (filter) { app.historyFilter = filter.dataset.filter; return renderTickets(); }
   const open = e.target.closest('[data-open-ticket]');
   if (open) return printer.open(app.state.tickets.find(t => t.id === open.dataset.openTicket), { animate: false });
+  const star = e.target.closest('[data-fav-toggle]');
+  if (star) {
+    const id = star.dataset.favToggle;
+    app.favOpen = app.favOpen === id ? null : id;
+    renderCatalog();
+    const card = $('matches').querySelector(`[data-fav-toggle="${CSS.escape(id)}"]`);
+    return (app.favOpen ? card?.closest('.match')?.querySelector('.fav-chip') : card)?.focus();
+  }
+  const favChip = e.target.closest('[data-fav-type]');
+  if (favChip) return toggleFav(favChip);
+  const favRemove = e.target.closest('[data-fav-remove]');
+  if (favRemove) {
+    const fav = app.state.favorites?.[Number(favRemove.dataset.favRemove)];
+    if (fav && commit(state => ({ removed: toggleFavorite(state, fav) }), 'Sauvegarde impossible : favori conservé.')) {
+      toast(`${fav.name} retiré de tes favoris.`);
+      renderAll();
+      ($('favorites-list').querySelector('[data-fav-remove]') || $('favorites-title')).focus();
+    }
+    return;
+  }
   const action = e.target.closest('[data-action]')?.dataset.action;
   if (action === 'refresh') return loadCatalog();
   if (action === 'reset-filters') {

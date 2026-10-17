@@ -1,3 +1,5 @@
+import { isValidFavorite } from './favorites.js';
+
 export const KEY = 'sports-bet-autonome-v1';
 export const CORRUPT_KEY = KEY + '-corrompu';
 export const SCHEMA_VERSION = 2;
@@ -25,6 +27,7 @@ const MIGRATIONS = {
 export function migrate(state) {
   if (!state || typeof state !== 'object' || Array.isArray(state) || !Number.isFinite(state.balance)) throw Error('Invalid state');
   for (const k of ['matches', 'tickets', 'transactions']) if (!Array.isArray(state[k])) state[k] = [];
+  if (state.favorites !== undefined) state.favorites = Array.isArray(state.favorites) ? state.favorites.filter(isValidFavorite) : [];
   for (const t of state.tickets) {
     t.status = LEGACY_STATUS[t.status] || t.status;
     if (typeof t.id === 'string') t.id = t.id.replace(/^SEB-/, 'BET-');
