@@ -9,28 +9,44 @@ export function toggleSelection(selected, matchId, key) {
   else selected[matchId] = key;
 }
 
-export function buildPicks(matches, selected, now = Date.now()) {
-  return matches.filter(m => selected[m.id] && !isClosed(m, now)).map(m => {
-    const o = options(m).find(o => o.key === selected[m.id]);
-    return o ? {
+const matchName = m => m.home + (m.away ? ' - ' + m.away : '');
+
+export function readSlip(matches, selected, now = Date.now()) {
+  const byId = new Map(matches.map(m => [m.id, m]));
+  const picks = [], unavailable = [];
+  for (const [id, key] of Object.entries(selected)) {
+    const m = byId.get(id);
+    const o = m && options(m).find(o => o.key === key);
+    if (!o || isClosed(m, now)) {
+      unavailable.push({ id, name: m ? matchName(m) : null });
+      continue;
+    }
+    picks.push({
       id: m.id, home: m.home, away: m.away, pick: o.key, label: o.label, short: o.short, matchNumber: m.matchNumber,
       odd: o.odd, deadline: m.deadline, market: m.market, sport: m.sport, competition: m.competition, resultPath: m.resultPath,
-    } : null;
-  }).filter(Boolean);
+    });
+  }
+  return { picks, unavailable };
 }
 
 export const combinedOdd = picks => picks.reduce((a, p) => a * p.odd, 1);
 
 export const potentialPayout = (stake, odd) => round2(stake * odd);
 
-export function checkBet({ picks, stake, balance, catalogFetchedAt, now = Date.now() }) {
+const refuse = (reason, message) => ({ ok: false, reason, message });
+
+export function checkBet({ picks, unavailable = [], stake, balance, catalogFetchedAt, now = Date.now() }) {
+  if (unavailable.length) {
+    const names = unavailable.map(u => u.name || 'match retiré du catalogue').join(', ');
+    return refuse('closed', `Paris clos : ${names}. Retire ${unavailable.length > 1 ? 'ces sélections' : 'cette sélection'} du ticket.`);
+  }
+  if (!picks.length) return refuse('empty', 'Ajoute au moins une sélection.');
   if (picks.some(p => isOfficialId(p.id)) && !isCatalogFresh(catalogFetchedAt, now))
-    return { ok: false, message: 'Catalogue de plus de 6 heures : nouveaux tickets suspendus. Relance la mise à jour GitHub, puis actualise la liste.' };
-  if (!picks.length || !Number.isFinite(stake) || stake < MIN_STAKE || stake > balance)
-    return { ok: false, message: 'Check your stake and balance.' };
-  const rounded = round2(stake);
-  if (rounded > balance) return { ok: false, message: null };
-  if (!Number.isFinite(combinedOdd(picks) * rounded)) return { ok: false, message: 'The combined odds are too high.' };
+    return refuse('stale', 'Catalogue de plus de 6 h : nouveaux tickets suspendus. Actualise la liste.');
+  const rounded = Number.isFinite(stake) ? round2(stake) : NaN;
+  if (!(rounded >= MIN_STAKE)) return refuse('stake', 'Mise minimale : 0,10 €.');
+  if (rounded > balance) return refuse('balance', 'Solde insuffisant pour cette mise.');
+  if (!Number.isFinite(combinedOdd(picks) * rounded)) return refuse('odds', 'Cote combinée trop élevée.');
   return { ok: true, stake: rounded };
 }
 
@@ -40,6 +56,7 @@ export function placeBet(state, picks, stake, now = new Date()) {
   const ticket = {
     id: 'BET-' + now.getTime().toString(36).toUpperCase(),
     date: now.toLocaleString('en-GB'),
+    createdAt: now.toISOString(),
     stake,
     picks,
     odd,

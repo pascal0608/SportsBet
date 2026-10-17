@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildPicks, checkBet, combinedOdd, placeBet, toggleSelection } from '../assets/js/betslip.js';
+import { checkBet, combinedOdd, placeBet, readSlip, toggleSelection } from '../assets/js/betslip.js';
 
 const NOW = Date.parse('2026-10-17T12:00:00Z');
 const fresh = new Date(NOW - 10 * 60000).toISOString();
@@ -15,9 +15,9 @@ test('cote combinée = produit non arrondi', () => {
 test('mise hors bornes ou panier vide : refus', () => {
   const base = { picks: [manualPick], balance: 5, catalogFetchedAt: fresh, now: NOW };
   assert.equal(checkBet({ ...base, stake: 0.05 }).ok, false);
-  assert.equal(checkBet({ ...base, stake: 5.5 }).ok, false);
+  assert.equal(checkBet({ ...base, stake: 5.5 }).reason, 'balance');
   assert.equal(checkBet({ ...base, stake: NaN }).ok, false);
-  assert.equal(checkBet({ ...base, picks: [], stake: 1 }).ok, false);
+  assert.equal(checkBet({ ...base, picks: [], stake: 1 }).reason, 'empty');
   assert.deepEqual(checkBet({ ...base, stake: 1.234 }), { ok: true, stake: 1.23 });
 });
 
@@ -26,7 +26,7 @@ test('catalogue périmé, invalide ou futur : refus si une sélection est offici
   assert.equal(checkBet({ ...base, catalogFetchedAt: fresh }).ok, true);
   assert.equal(checkBet({ ...base, catalogFetchedAt: new Date(NOW - 6 * 3600e3 - 1).toISOString() }).ok, false);
   assert.equal(checkBet({ ...base, catalogFetchedAt: new Date(NOW + 6 * 60000).toISOString() }).ok, false);
-  assert.equal(checkBet({ ...base, catalogFetchedAt: undefined }).ok, false);
+  assert.equal(checkBet({ ...base, catalogFetchedAt: undefined }).reason, 'stale');
 });
 
 test('panier uniquement manuel : pas de contrôle de fraîcheur', () => {
@@ -44,6 +44,7 @@ test('validation : débit, ticket en attente, gain arrondi, transaction', () => 
   assert.equal(state.tickets[0], t);
   assert.equal(state.transactions[0].amount, -2.5);
   assert.equal(state.transactions[0].balance, 7.5);
+  assert.equal(t.createdAt, new Date(NOW).toISOString());
 });
 
 test('sélection : même issue = retrait, autre issue = remplacement', () => {
@@ -56,11 +57,20 @@ test('sélection : même issue = retrait, autre issue = remplacement', () => {
   assert.deepEqual(sel, {});
 });
 
-test('les matchs clos sont exclus des sélections', () => {
+test('une sélection close reste visible et bloque la validation', () => {
   const matches = [
-    { id: 'fdj-1-1', home: 'A', sport: 'Football', deadline: new Date(NOW - 1000).toISOString(), outcomes: [{ key: '11', odd: 2 }] },
-    { id: 'fdj-2-2', home: 'B', sport: 'Football', deadline: new Date(NOW + 60000).toISOString(), outcomes: [{ key: '21', odd: 3 }] },
+    { id: 'fdj-1-1', home: 'A', away: 'B', sport: 'Football', deadline: new Date(NOW - 1000).toISOString(), outcomes: [{ key: '11', odd: 2 }] },
+    { id: 'fdj-2-2', home: 'C', sport: 'Football', deadline: new Date(NOW + 60000).toISOString(), outcomes: [{ key: '21', odd: 3 }] },
   ];
-  const picks = buildPicks(matches, { 'fdj-1-1': '11', 'fdj-2-2': '21' }, NOW);
-  assert.deepEqual(picks.map(p => p.id), ['fdj-2-2']);
+  const slip = readSlip(matches, { 'fdj-2-2': '21', 'fdj-1-1': '11', 'fdj-9-9': '91' }, NOW);
+  assert.deepEqual(slip.picks.map(p => p.id), ['fdj-2-2']);
+  assert.deepEqual(slip.unavailable, [{ id: 'fdj-1-1', name: 'A - B' }, { id: 'fdj-9-9', name: null }]);
+  const check = checkBet({ ...slip, stake: 1, balance: 5, catalogFetchedAt: fresh, now: NOW });
+  assert.equal(check.reason, 'closed');
+  assert.match(check.message, /A - B, match retiré du catalogue/);
+});
+
+test('mise arrondie au-dessus du solde : refus explicite', () => {
+  assert.equal(checkBet({ picks: [manualPick], stake: 5.004, balance: 5, now: NOW }).ok, true);
+  assert.equal(checkBet({ picks: [manualPick], stake: 5.006, balance: 5, now: NOW }).reason, 'balance');
 });

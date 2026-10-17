@@ -1,5 +1,5 @@
 import { applyOfficialResults, fetchCatalog, filterMatches, isClosed, LIVE_CATALOG_AGE_MS, MAX_CATALOG_AGE_MS, mergeCatalog, options } from './catalog.js';
-import { buildPicks, checkBet, combinedOdd, placeBet, toggleSelection } from './betslip.js';
+import { checkBet, combinedOdd, placeBet, readSlip, toggleSelection } from './betslip.js';
 import { settleTickets } from './settle.js';
 import { BACKUP_FILENAME, backupJson, load, MAX_BACKUP_BYTES, parseBackup, persist, pruneOfficialResults, recordActivity } from './state.js';
 import { chosen, englishMarket, englishSport, esc, money, round2 } from './format.js';
@@ -22,7 +22,8 @@ function tell(s) {
   timer = setTimeout(() => $('message').textContent = '', 5000);
 }
 
-const picks = () => buildPicks(state.matches, selected);
+const slip = () => readSlip(state.matches, selected);
+const picks = () => slip().picks;
 const visible = (includeClosed = false) => filterMatches(state.matches, { q: $('search').value, sport: $('sportFilter').value, competition: $('competitionFilter').value, includeClosed });
 
 function renderAccount() {
@@ -35,10 +36,9 @@ function render() {
   $('latestTicketActions').hidden = !state.tickets.length;
   $('balance').textContent = money(state.balance);
   $('stake').max = state.balance;
-  for (const m of state.matches) if (isClosed(m)) delete selected[m.id];
   $('matches').innerHTML = visible().map(m => `<article class="match"><div><div class="matchMeta">${esc(englishSport(m.sport))} · ${esc(m.competition || 'Custom match')}<br>${m.startDate ? esc(new Date(m.startDate).toLocaleString('en-GB', { timeZone: 'Europe/Paris', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })) + ' · Paris time' : ''} ${isClosed(m) ? '· Closed' : ''}</div><div class="teams">${esc(m.home)}${m.away ? '<br><small>vs</small> ' + esc(m.away) : ''}</div><p class="small">${esc(englishMarket(m.market || 'Match winner'))}</p></div><div class="choices">${options(m).map(o => `<button class="choice" data-match="${esc(m.id)}" data-pick="${esc(o.key)}" aria-label="${esc(o.label)} odds ${o.odd}" aria-pressed="${selected[m.id] === o.key}" ${isClosed(m) ? 'disabled' : ''}>${esc(o.short || o.label)}<span>${o.odd.toFixed(2)}</span></button>`).join('')}</div></article>`).join('') || '<p class="catalogEmpty">No matches found. Try another search or refresh the fixtures.</p>';
-  const list = picks(), odd = combinedOdd(list), stake = Number($('stake').value);
-  $('selection').innerHTML = list.length ? list.map(p => `<div class="pick"><b>${esc(p.home)}${p.away ? ' — ' + esc(p.away) : ''}</b><span> ${esc(chosen(p))} · ${p.odd.toFixed(2)}</span></div>`).join('') : '<p class="empty">Your ticket starts here.<br>Choose 1, X or 2 to make a pick.</p>';
+  const { picks: list, unavailable } = slip(), odd = combinedOdd(list), stake = Number($('stake').value);
+  $('selection').innerHTML = list.length || unavailable.length ? list.map(p => `<div class="pick"><b>${esc(p.home)}${p.away ? ' — ' + esc(p.away) : ''}</b><span> ${esc(chosen(p))} · ${p.odd.toFixed(2)}</span></div>`).join('') + unavailable.map(u => `<div class="pick"><b>${esc(u.name || 'Match retiré')}</b><span> Clos</span></div>`).join('') : '<p class="empty">Your ticket starts here.<br>Choose 1, X or 2 to make a pick.</p>';
   $('totalOdds').textContent = list.length ? odd.toFixed(2) : '—';
   $('potential').textContent = money(list.length && Number.isFinite(stake) ? round2(stake * odd) : 0);
   $('validate').disabled = !list.length || !(stake >= .1 && stake <= state.balance);
@@ -151,10 +151,10 @@ $('adminToggle').addEventListener('click', () => {
 });
 
 $('validate').addEventListener('click', () => {
-  const list = picks();
-  const check = checkBet({ picks: list, stake: Number($('stake').value), balance: state.balance, catalogFetchedAt: state.catalogFetchedAt });
-  if (!check.ok) { if (check.message) tell(check.message); return; }
-  const t = placeBet(state, list, check.stake);
+  const current = slip();
+  const check = checkBet({ ...current, stake: Number($('stake').value), balance: state.balance, catalogFetchedAt: state.catalogFetchedAt });
+  if (!check.ok) return tell(check.message);
+  const t = placeBet(state, current.picks, check.stake);
   selected = {};
   save(); render();
   tell('Ticket confirmed!');
