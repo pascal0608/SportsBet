@@ -440,3 +440,10 @@ Nouveaux champs d'état (tous facultatifs, ajoutés sans rupture) : `schemaVersi
 Nouvelles valeurs : statut de ticket `VOID`, détail de transaction `Refund BET-…`.
 
 Préférences hors état (clé `sports-bet-preferences`, non sauvegardées) : son de l'imprimante, dernière mise. Sélections du panier en `sessionStorage` (clé `sports-bet-selection`).
+
+### 12.1 Ajouts du 17/10/2026 (après la refonte)
+
+- **Marchés secondaires du rugby** : `sync_fdj.py` lit la page de chaque match de rugby (`DETAIL_SPORTS`) et publie chaque marché simple comme une entrée de `matches` avec `extra: true` et le même `eventId`. Exclus : marchés combinés (« et », « & », « Combiné », « Double Chance », « Poste ») et marchés de plus de 40 issues. Libellés des handicaps rendus explicites (« Handicap -12 »).
+- **Résultats** : une page de résultat est lue une seule fois par match et règle tous ses marchés (100 pages au plus par passage).
+- **Une sélection par match** : choisir une issue d'un autre marché du même `eventId` remplace la sélection existante ; la validation refuse deux sélections d'un même match (`same-event`).
+- **Stockage** : les marchés `extra` du catalogue ne sont pas enregistrés dans le navigateur ni dans les sauvegardes, sauf ceux présents dans un ticket (ils sont rechargés à chaque ouverture).

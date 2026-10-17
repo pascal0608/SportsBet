@@ -16,7 +16,8 @@ Application web personnelle de paris sportifs en **crédit virtuel**. Elle perme
 |---|---|
 | Catalogue | `sports-data.json`, rechargé à l'ouverture, au retour sur l'onglet après 10 min et avec le bouton « Actualiser ». |
 | Fraîcheur | Badge vert si les données ont moins de 45 min, orange au-delà de 45 min, rouge au-delà de 6 h (tickets suspendus). |
-| Ticket | Une sélection par match. Cote combinée = produit des cotes. Mise minimale 0,10 €, dans la limite du solde. |
+| Marchés | Un marché principal par match (1N2, face à face…). Pour le **rugby**, tous les paris simples du match sont aussi proposés sous « +N paris » : marqueurs d'essai, nombre d'essais, handicaps, points, mi-temps… |
+| Ticket | **Une seule sélection par match** : choisir un autre pari du même match remplace le précédent. Cote combinée = produit des cotes. Mise minimale 0,10 €, dans la limite du solde. |
 | Règlement | Automatique, dès qu'un résultat officiel est confirmé. Une sélection perdue fait perdre le ticket. Une sélection annulée compte pour une cote de 1. Si toutes les sélections sont annulées, le ticket est ANNULÉ et la mise remboursée. |
 | Matchs perso | Menu compte → Gestion des matchs : ajout d'un match et saisie manuelle de son résultat. |
 | Ticket imprimé | Animation d'imprimante thermique, puis Imprimer / Image PNG / PDF / Partager. Réouverture depuis « Mes tickets ». |
@@ -42,7 +43,7 @@ Aucune installation n'est nécessaire. Il n'y a ni étape de build ni dépendanc
 
 Le workflow `.github/workflows/fdj.yml` tourne toutes les 15 minutes sur `main`. À chaque passage, il :
 
-1. lance `python sync_fdj.py`, qui relève le catalogue et les résultats ;
+1. lance `python sync_fdj.py`, qui relève le catalogue et les résultats (et, pour le rugby, la page de chaque match pour ses paris secondaires ; les paris combinés « X et Y » sont exclus) ;
 2. commite `sports-data.json` si le fichier a changé ;
 3. republie le site sur GitHub Pages.
 
