@@ -1,3 +1,5 @@
+import { sportLabel } from './format.js';
+
 export const MAX_CATALOG_AGE_MS = 6 * 60 * 60000;
 export const LIVE_CATALOG_AGE_MS = 45 * 60000;
 export const FUTURE_TOLERANCE_MS = 300000;
@@ -21,9 +23,26 @@ export function isClosed(m, now = Date.now()) {
 export function filterMatches(matches, { q = '', sport = '', competition = '', includeClosed = false } = {}, now = Date.now()) {
   q = q.trim().toLowerCase();
   return matches.filter(m => (includeClosed || !isClosed(m, now))
-    && (!sport || m.sport === sport)
+    && (!sport || sportLabel(m.sport) === sport)
     && (!competition || m.competition === competition)
-    && (!q || [m.home, m.away, m.competition, m.region].join(' ').toLowerCase().includes(q)));
+    && (!q || [m.home, m.away, m.competition].join(' ').toLowerCase().includes(q)));
+}
+
+export function countBy(matches, key) {
+  const counts = new Map();
+  for (const m of matches) {
+    const k = key(m);
+    if (k) counts.set(k, (counts.get(k) || 0) + 1);
+  }
+  return counts;
+}
+
+export function freshness(fetchedAt, now = Date.now()) {
+  const date = Date.parse(fetchedAt);
+  if (!Number.isFinite(date)) return { level: 'unknown', age: Infinity };
+  const age = Math.max(0, now - date);
+  const level = !isCatalogFresh(fetchedAt, now) ? 'stale' : age > LIVE_CATALOG_AGE_MS ? 'late' : 'fresh';
+  return { level, age };
 }
 
 export function isCatalogFresh(fetchedAt, now = Date.now()) {

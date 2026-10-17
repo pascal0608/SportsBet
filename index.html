@@ -1,9 +1,295 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SPORTS BET — Version autonome</title><meta name="description" content="Private sports predictions, virtual credit and printable simulation tickets."><link rel="icon" href="favicon.svg"><link rel="stylesheet" href="style.css"></head>
-<body><header><div class="brand"><span class="shamrock" role="img" aria-label="Irish shamrock">☘</span> SPORTS<span> BET</span><small>VERSION AUTONOME</small></div><div class="headerAccount"><div class="balance"><span>Virtual balance</span><strong id="balance"></strong></div><button id="accountButton" class="accountButton" aria-haspopup="dialog"><span aria-hidden="true">&#9675;</span><span>My account<small>Joueur</small></span></button></div></header>
-<main><div class="intro"><div><p class="eyebrow">MATCH PICKS</p><h1>Make your picks.</h1><p>Choose your winners. Build your ticket.</p></div><button id="adminToggle" class="outline" aria-expanded="false">Match management</button></div>
-<p class="notice">Simulation · aucun gain réel. Matchs et résultats officiels FDJ actualisés automatiquement sur GitHub, puis chargés à chaque ouverture. Aucun mail. Tickets conservés dans ce navigateur, indépendants de la version ChatGPT.</p>
-<p id="stateStatus" class="small" role="status">Version autonome · sauvegarde dans ce navigateur</p>
-<section id="admin" hidden class="admin"><h2>Match control</h2><p>Manage your own fixtures and enter final results.</p><form id="matchForm"><label>Sport<select id="sport"><option>Football</option><option>Rugby</option><option>Tennis</option><option>Basketball</option><option>Handball</option><option>Volleyball</option><option>Ice hockey</option><option>Baseball</option><option>American football</option><option>Other</option></select></label><label>Home team<input id="home" required maxlength="60"></label><label>Away team<input id="away" required maxlength="60"></label><label>Odds 1<input id="odd1" type="number" min="1.01" step=".01" value="2" required></label><label>Odds X<input id="oddN" type="number" min="1.01" step=".01" value="3" required></label><label>Odds 2<input id="odd2" type="number" min="1.01" step=".01" value="2" required></label><button>Add match</button></form><div id="results"></div><div class="adminFoot"><label>Add virtual credit (€)<input id="credit" type="number" min=".1" max="10000" step=".1" value="10"></label><button id="addCredit">Add credit</button><button id="reset" class="outline">New session</button></div><p class="small">Tickets et résultats enregistrés dans ce navigateur uniquement. New session efface l’historique et remet le crédit à 10 € virtuels.</p></section>
-<div class="workspace"><section><div class="sectionTitle"><h2>Matches</h2><span>1 home · X draw · 2 away</span></div><div class="filters"><label>Search<input id="search" placeholder="Team, player, competition…" type="search"></label><label>Sport<select id="sportFilter"><option value="">All sports</option></select></label><label>Competition<select id="competitionFilter"><option value="">All competitions</option></select></label></div><div class="catalogBar"><span id="catalogStatus" role="status">Ajoute tes matchs dans Match management.</span><button id="refresh" class="outline">Actualiser la liste</button></div><div id="matches"></div></section><aside><div class="ticket"><div class="ticketTop"><span><span class="shamrock" role="img" aria-label="Irish shamrock">☘</span> SPORTS BET</span><span>ACCUMULATOR</span></div><h2>My ticket</h2><div id="selection"></div><div class="ticketTotals"><p><span>Combined odds</span><strong id="totalOdds">—</strong></p><label>Virtual stake (€)<input id="stake" type="number" min=".1" step=".1" value="1"></label><p class="potential"><span>Potential virtual return</span><strong id="potential">0.00 €</strong></p></div><p class="small">Every pick must win. Returns include your stake.</p><button id="validate" class="primary">Confirm ticket</button><div id="latestTicketActions" hidden><button id="latestTicket" class="outline">Digital ticket</button></div><button id="clear" class="clear">Clear picks</button><div class="ticketEnd">SIMULATION TICKET<br>NO REAL BET PLACED</div></div></aside></div>
-<section class="history"><div class="sectionTitle"><h2>My tickets</h2><span id="ticketCount"></span></div><div id="history"></div></section><p id="message" class="message" role="status" aria-live="polite"></p><footer>SPORTS BET · GOOD LUCK · ENJOY THE GAME</footer></main><dialog id="accountDialog" aria-labelledby="accountTitle"><div class="dialogHead"><h2 id="accountTitle">My account</h2><button id="closeAccount" class="outline">Close</button></div><div class="accountIdentity"><strong>Mon compte</strong><span>Joueur</span><small>Simulation · version autonome</small></div><div class="accountBalance"><span>Virtual balance</span><strong id="accountBalance"></strong></div><form id="accountCreditForm"><h3>Add credit</h3><label for="accountAmount">Virtual credit (€)</label><input id="accountAmount" type="number" min="0.1" max="10000" step="0.1" value="10" required><button class="primary">Validate</button></form><h3>Mes sauvegardes</h3><p class="small">Tes tickets sont enregistrés automatiquement dans ce navigateur. Garde une copie pour les transférer ou les retrouver après un effacement.</p><div class="catalogBar"><button id="backup" class="outline">Sauvegarder mes données</button><label class="button outline">Restaurer une sauvegarde<input id="restore" type="file" accept=".json,application/json"></label></div><h3>Activity</h3><div id="accountActivity"></div><p class="small">Simulation account · virtual credit only.</p></dialog><dialog id="ticketDialog"><div class="dialogHead"><h2>Digital ticket</h2><button id="closeTicket" class="outline" aria-label="Close ticket">Close</button></div><div class="exportButtons"><button id="shareTicket" class="primary">Share ticket</button><a id="saveImage" class="button outline" download>Save ticket image</a></div><div class="secondaryExports"><button id="dialogPrint" class="outline">Print</button><a id="downloadPdf" class="button outline" download>Save PDF</a><a id="openPdf" class="button outline" target="_blank" rel="noopener">Open PDF</a></div><div id="ticketPreview"></div></dialog><div id="printTicket"></div><script type="module" src="assets/js/main.js"></script></body></html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SPORTS BET</title>
+<meta name="description" content="SPORTS BET : composez vos combinés, suivez vos tickets et imprimez-les.">
+<meta name="theme-color" content="#0b1730">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preload" href="assets/fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/barlow-condensed-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/css/ticket.css">
+<script type="module" src="assets/js/main.js"></script>
+</head>
+<body>
+<svg width="0" height="0" class="sr-only" aria-hidden="true" focusable="false">
+  <symbol id="i-trefle" viewBox="-52 -52 104 104">
+    <g fill="currentColor">
+      <path d="M0 0C-14-10-30-20-30-34C-30-44-22-50-15-50C-8-50-2-46 0-40C2-46 8-50 15-50C22-50 30-44 30-34C30-20 14-10 0 0Z"/>
+      <path transform="rotate(120)" d="M0 0C-14-10-30-20-30-34C-30-44-22-50-15-50C-8-50-2-46 0-40C2-46 8-50 15-50C22-50 30-44 30-34C30-20 14-10 0 0Z"/>
+      <path transform="rotate(-120)" d="M0 0C-14-10-30-20-30-34C-30-44-22-50-15-50C-8-50-2-46 0-40C2-46 8-50 15-50C22-50 30-44 30-34C30-20 14-10 0 0Z"/>
+    </g>
+    <path d="M0 0C2 14 6 30 16 46" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></g></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></g></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></g></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-ticket" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M5 3h14v18l-2.3-1.5L14.3 21 12 19.5 9.7 21l-2.4-1.5L5 21z"/><path d="M8.5 8h7M8.5 12h7" stroke-linecap="round"/></g></symbol>
+</svg>
+
+<a class="skip-link" href="#contenu">Aller au contenu</a>
+
+<header class="topbar">
+  <div class="topbar__inner">
+    <a class="brand" href="#paris" aria-label="SPORTS BET, accueil">
+      <svg class="brand__mark" aria-hidden="true"><use href="#i-trefle"/></svg>
+      <span class="brand__name">SPORTS<span> BET</span></span>
+    </a>
+    <nav class="tabs" aria-label="Sections">
+      <a class="tabs__item" href="#paris" data-view-link="paris">Paris</a>
+      <a class="tabs__item" href="#tickets" data-view-link="tickets">Mes tickets <span class="tabs__count num" id="ticket-count"></span></a>
+    </nav>
+    <div class="wallet">
+      <div class="wallet__balance">
+        <span class="wallet__label">Solde</span>
+        <strong class="wallet__amount num" id="balance" aria-hidden="true">—</strong>
+        <span class="sr-only" id="balance-live" aria-live="polite"></span>
+      </div>
+      <button class="icon-btn icon-btn--dark" id="open-account" type="button" aria-haspopup="dialog">
+        <svg aria-hidden="true"><use href="#i-user"/></svg>
+        <span class="sr-only">Mon compte</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="contenu" tabindex="-1">
+  <section class="view view--paris" id="view-paris" data-view="paris" aria-labelledby="paris-title">
+    <div class="catalog">
+      <div class="catalog__head">
+        <h1 id="paris-title">Paris sportifs</h1>
+        <div class="freshness">
+          <span class="badge badge--fresh" id="freshness" role="status">Chargement…</span>
+          <button class="btn btn--ghost btn--sm" id="refresh" type="button">
+            <svg aria-hidden="true"><use href="#i-refresh"/></svg><span>Actualiser</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="chips" id="sport-chips" role="group" aria-label="Filtrer par sport"></div>
+
+      <div class="filters">
+        <label class="field field--search">
+          <span class="sr-only">Rechercher une équipe ou une compétition</span>
+          <svg aria-hidden="true"><use href="#i-search"/></svg>
+          <input id="search" type="search" placeholder="Équipe, joueur, compétition…" autocomplete="off" enterkeyhint="search">
+        </label>
+        <label class="field field--select">
+          <span class="sr-only">Compétition</span>
+          <select id="competition"><option value="">Toutes les compétitions</option></select>
+        </label>
+      </div>
+
+      <p class="catalog__count" id="match-count" aria-live="polite"></p>
+      <div class="match-list" id="matches" aria-busy="true"></div>
+      <button class="btn btn--outline-light btn--block" id="more-matches" type="button" hidden>Afficher plus de matchs</button>
+    </div>
+
+    <aside class="slip surface" id="slip" aria-labelledby="slip-title" data-open="false">
+      <button class="slip__handle" id="slip-handle" type="button" aria-expanded="false" aria-controls="slip-body">
+        <span class="slip__handle-count num" id="slip-handle-count">0</span>
+        <span class="slip__handle-text">Mon ticket</span>
+        <span class="slip__handle-odd num" id="slip-handle-odd"></span>
+        <svg class="slip__handle-chevron" aria-hidden="true"><use href="#i-chevron"/></svg>
+      </button>
+      <div class="slip__body" id="slip-body">
+        <div class="slip__head">
+          <h2 id="slip-title">Mon ticket</h2>
+          <span class="slip__type" id="slip-type"></span>
+          <button class="link-btn" id="slip-clear" type="button" hidden>Tout effacer</button>
+        </div>
+        <ul class="slip__picks" id="slip-picks"></ul>
+        <div class="slip__empty" id="slip-empty">
+          <svg aria-hidden="true"><use href="#i-trefle"/></svg>
+          <p><strong>Ton ticket est vide.</strong><br>Choisis une cote pour l'ajouter.</p>
+        </div>
+        <div class="slip__totals">
+          <div class="slip__row"><span>Cote totale</span><strong class="num" id="slip-odd">—</strong></div>
+          <div class="stake">
+            <label class="stake__label" for="stake">Mise</label>
+            <div class="stake__input">
+              <input id="stake" type="text" inputmode="decimal" autocomplete="off" value="1" aria-describedby="slip-reason">
+              <span aria-hidden="true">€</span>
+            </div>
+            <div class="stake__quick" role="group" aria-label="Mise rapide">
+              <button type="button" class="chip chip--sm" data-stake="1">1 €</button>
+              <button type="button" class="chip chip--sm" data-stake="2">2 €</button>
+              <button type="button" class="chip chip--sm" data-stake="5">5 €</button>
+              <button type="button" class="chip chip--sm" data-stake="10">10 €</button>
+            </div>
+          </div>
+          <div class="slip__row slip__row--gain"><span>Gain potentiel</span><strong class="num" id="slip-gain">0,00 €</strong></div>
+        </div>
+        <p class="slip__reason" id="slip-reason" aria-live="polite"></p>
+        <button class="btn btn--primary btn--block btn--lg" id="validate" type="button" disabled>Valider le ticket</button>
+      </div>
+    </aside>
+  </section>
+
+  <section class="view view--tickets" id="view-tickets" data-view="tickets" aria-labelledby="tickets-title" hidden>
+    <div class="tickets-head">
+      <h1 id="tickets-title">Mes tickets</h1>
+      <p class="tickets-summary num" id="tickets-summary"></p>
+    </div>
+    <div class="chips" id="ticket-filters" role="group" aria-label="Filtrer les tickets">
+      <button type="button" class="chip" data-filter="PENDING" aria-pressed="false">En cours</button>
+      <button type="button" class="chip" data-filter="WON" aria-pressed="false">Gagnés</button>
+      <button type="button" class="chip" data-filter="LOST" aria-pressed="false">Perdus</button>
+      <button type="button" class="chip" data-filter="ALL" aria-pressed="true">Tous</button>
+    </div>
+    <div class="ticket-list" id="history"></div>
+  </section>
+</main>
+
+<footer class="footer">
+  <svg aria-hidden="true"><use href="#i-trefle"/></svg>
+  <p>SPORTS BET · Jeu privé</p>
+</footer>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<dialog class="dialog" id="account-dialog" aria-labelledby="account-title">
+  <div class="dialog__head">
+    <h2 id="account-title">Mon compte</h2>
+    <button class="icon-btn" type="button" data-close><svg aria-hidden="true"><use href="#i-close"/></svg><span class="sr-only">Fermer</span></button>
+  </div>
+  <div class="dialog__body">
+    <div class="account-card">
+      <span>Solde</span>
+      <strong class="num" id="account-balance"></strong>
+    </div>
+
+    <form class="stack" id="player-form">
+      <label class="label" for="player-name">Nom sur les tickets</label>
+      <div class="inline-field">
+        <input class="input" id="player-name" maxlength="24" autocomplete="nickname">
+        <button class="btn btn--secondary" type="submit">Enregistrer</button>
+      </div>
+    </form>
+
+    <form class="stack" id="credit-form">
+      <label class="label" for="credit-amount">Ajouter du crédit</label>
+      <div class="inline-field">
+        <div class="stake__input stake__input--light">
+          <input id="credit-amount" type="text" inputmode="decimal" value="10" autocomplete="off">
+          <span aria-hidden="true">€</span>
+        </div>
+        <button class="btn btn--primary" type="submit">Créditer</button>
+      </div>
+      <p class="hint">Entre 0,10 € et 10 000 €.</p>
+    </form>
+
+    <section class="stack" aria-labelledby="backup-title">
+      <h3 id="backup-title">Mes sauvegardes</h3>
+      <p class="hint">Tes tickets sont enregistrés dans ce navigateur. Garde une copie pour les retrouver ailleurs ou après un effacement.</p>
+      <div class="btn-row">
+        <button class="btn btn--secondary" id="backup" type="button">Sauvegarder mes données</button>
+        <label class="btn btn--secondary file-btn">Restaurer une sauvegarde<input id="restore" type="file" accept=".json,application/json"></label>
+      </div>
+    </section>
+
+    <section class="stack" aria-labelledby="prefs-title">
+      <h3 id="prefs-title">Préférences</h3>
+      <label class="switch">
+        <input type="checkbox" id="pref-sound">
+        <span class="switch__track" aria-hidden="true"></span>
+        <span>Son de l'imprimante</span>
+      </label>
+    </section>
+
+    <section class="stack" aria-labelledby="tools-title">
+      <h3 id="tools-title">Outils</h3>
+      <div class="btn-row">
+        <button class="btn btn--secondary" id="open-manage" type="button" aria-haspopup="dialog">Gestion des matchs</button>
+        <button class="btn btn--danger-ghost" id="reset" type="button">Nouvelle session</button>
+      </div>
+    </section>
+
+    <section class="stack" aria-labelledby="activity-title">
+      <h3 id="activity-title">Activité</h3>
+      <ul class="activity" id="activity"></ul>
+    </section>
+  </div>
+</dialog>
+
+<dialog class="dialog" id="manage-dialog" aria-labelledby="manage-title">
+  <div class="dialog__head">
+    <h2 id="manage-title">Gestion des matchs</h2>
+    <button class="icon-btn" type="button" data-close><svg aria-hidden="true"><use href="#i-close"/></svg><span class="sr-only">Fermer</span></button>
+  </div>
+  <div class="dialog__body">
+    <form class="stack" id="match-form">
+      <h3>Ajouter un match</h3>
+      <div class="form-grid">
+        <label class="label">Sport
+          <select class="input" id="match-sport">
+            <option>Football</option><option>Rugby</option><option>Tennis</option><option>Basketball</option>
+            <option>Handball</option><option>Volley-ball</option><option>Hockey sur glace</option><option>Baseball</option>
+            <option>Football américain</option><option>Autre</option>
+          </select>
+        </label>
+        <label class="label">Équipe à domicile<input class="input" id="match-home" required maxlength="60" autocomplete="off"></label>
+        <label class="label">Équipe à l'extérieur<input class="input" id="match-away" required maxlength="60" autocomplete="off"></label>
+      </div>
+      <div class="form-grid form-grid--odds">
+        <label class="label">Cote 1<input class="input num" id="match-odd-1" inputmode="decimal" value="2,00" required></label>
+        <label class="label">Cote N<input class="input num" id="match-odd-n" inputmode="decimal" value="3,00" required></label>
+        <label class="label">Cote 2<input class="input num" id="match-odd-2" inputmode="decimal" value="2,00" required></label>
+      </div>
+      <button class="btn btn--primary" type="submit">Ajouter le match</button>
+    </form>
+
+    <section class="stack" aria-labelledby="results-title">
+      <h3 id="results-title">Résultats à saisir</h3>
+      <p class="hint">Les matchs du catalogue sont réglés automatiquement. Seuls tes matchs ajoutés à la main apparaissent ici.</p>
+      <div id="manual-results"></div>
+    </section>
+  </div>
+</dialog>
+
+<dialog class="dialog dialog--small" id="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-text">
+  <form method="dialog">
+    <div class="dialog__body">
+      <h2 id="confirm-title"></h2>
+      <p id="confirm-text"></p>
+    </div>
+    <div class="dialog__foot">
+      <button class="btn btn--secondary" value="cancel">Annuler</button>
+      <button class="btn btn--primary" value="ok" id="confirm-ok"></button>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="printer" id="printer" aria-labelledby="printer-title">
+  <h2 class="sr-only" id="printer-title">Ticket</h2>
+  <div class="printer__stage">
+    <div class="printer__machine" aria-hidden="true">
+      <div class="printer__top"><span class="printer__led"></span><span class="printer__brand">SPORTS BET</span></div>
+      <div class="printer__slot"></div>
+    </div>
+    <div class="printer__window">
+      <div class="printer__paper" id="printer-paper"></div>
+    </div>
+  </div>
+  <p class="printer__skip" id="printer-skip">Touchez l'écran ou appuyez sur Échap pour passer</p>
+  <div class="printer__actions" id="printer-actions">
+    <button class="btn btn--accent" type="button" data-ticket-action="print">Imprimer</button>
+    <button class="btn btn--outline-light" type="button" data-ticket-action="png">Enregistrer l'image</button>
+    <button class="btn btn--outline-light" type="button" data-ticket-action="pdf">PDF</button>
+    <button class="btn btn--outline-light" type="button" data-ticket-action="share" hidden>Partager</button>
+    <button class="btn btn--ghost-light" type="button" data-ticket-action="close">Fermer</button>
+  </div>
+  <button class="printer__sound icon-btn icon-btn--dark" type="button" id="printer-sound" aria-pressed="false">
+    <span aria-hidden="true">🔈</span><span class="sr-only">Son de l'imprimante</span>
+  </button>
+</dialog>
+
+<div class="print-root" id="print-root" aria-hidden="true"></div>
+</body>
+</html>
