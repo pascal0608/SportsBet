@@ -413,3 +413,30 @@ L'état est réinitialisé puis écrasé au démarrage, et les données sont per
 - Le canvas est rendu deux fois.
 - Les tickets très longs (> 20 000 px) ne peuvent pas être exportés.
 - Format monétaire `en-GB`.
+
+---
+
+## 12. Décisions appliquées pendant la refonte
+
+Validées le 17/10/2026. Les sections 1 à 10 décrivent l'existant ; voici ce qui a changé.
+
+| Point | Décision appliquée |
+|---|---|
+| 11.1 Croissance des données | Côté client : `officialResults` ne garde que les ids présents dans les tickets (migration v2 et après chaque règlement). Côté serveur : `sync_fdj.py` purge les résultats 30 jours après confirmation et les matchs suivis sans résultat 30 jours après clôture ; `tracked` ne garde que `id`, `resultPath`, `startDate`, `deadline`. Toute écriture (ticket, crédit, résultat, nom) est annulée si la sauvegarde échoue. |
+| 11.2 Statut ANNULÉ | Nouveau statut de ticket `VOID` quand toutes les sélections sont annulées (mise remboursée). Les anciens tickets `WON` avec cote 1 et gain = mise sont migrés en `VOID`. La cote d'origine est conservée dans `initialOdd` quand des annulations la réduisent. |
+| 11.3 Marchés à plus de 3 issues | 2 ou 3 issues : boutons en ligne. Au-delà : liste repliée « Voir les N choix ». |
+| 11.4 Mentions FDJ | Aucune mention de la FDJ, de Parions Sport, de simulation ou de fictif dans la page ni sur le ticket. Source et avertissements dans le README. |
+| 11.5 Polices | DejaVu et Nimbus (AGPL) retirées. Barlow, Barlow Condensed, JetBrains Mono (OFL) auto-hébergées, avec piles de repli système. |
+| 11.6 Sélection close | Elle reste visible dans le panier (« Paris clos ») et bloque la validation jusqu'à son retrait. |
+| 11.7 Données illisibles | Copie brute sous `sports-bet-autonome-v1-corrompu` et message d'alerte. |
+| 11.8 Restauration | Migration puis validation ; `VOID` et les statuts français hérités sont acceptés. |
+| 11.9 Dates | `date` (chaîne en-GB) conservée ; `createdAt` ISO ajouté aux nouveaux tickets, `at` aux nouvelles transactions. Affichage fr-FR, chaîne brute si illisible. |
+| 11.10 Schéma | `schemaVersion: 2` avec migrations successives au chargement et à la restauration. |
+| 11.11 Cotes +7 % | Inchangé, en attente de la décision de Pascal (README). |
+| 11.13 Défauts mineurs | Corrigés : refus explicite de mise > solde, champ `region` retiré, fraîcheur recalculée toutes les 30 s, liste des résultats limitée aux matchs perso, formulaire de crédit unique, bouton unique « Voir le ticket », tickets longs exportables (échelle du canvas réduite), formats fr-FR. |
+
+Nouveaux champs d'état (tous facultatifs, ajoutés sans rupture) : `schemaVersion`, `playerName`, `ticket.createdAt`, `ticket.initialOdd`, `transaction.at`.
+
+Nouvelles valeurs : statut de ticket `VOID`, détail de transaction `Refund BET-…`.
+
+Préférences hors état (clé `sports-bet-preferences`, non sauvegardées) : son de l'imprimante, dernière mise. Sélections du panier en `sessionStorage` (clé `sports-bet-selection`).
