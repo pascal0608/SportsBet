@@ -538,6 +538,15 @@ details.market > summary:hover { border-color: var(--primary); }
 @keyframes toast-in { from { opacity: 0; transform: translateY(12px); } }
 @keyframes toast-out { to { opacity: 0; transform: translateY(8px); } }
 
+.toast__action { margin-left: auto; min-height: 36px; padding: 0 var(--s3); border: 0; border-radius: var(--r-sm); background: var(--bg); color: var(--accent); font-weight: 800; }
+.toast__action:hover { background: var(--bg-raised); }
+
+.ticket-card--new-win { box-shadow: 0 0 0 2px var(--accent), 0 0 28px rgb(255 204 26 / .35); animation: new-win-glow 2.4s ease-in-out infinite; }
+@keyframes new-win-glow { 50% { box-shadow: 0 0 0 2px var(--accent), 0 0 44px rgb(255 204 26 / .6); } }
+.ticket-card__new { padding: 2px var(--s2); border-radius: var(--r-sm); background: var(--accent); color: var(--accent-ink); font-family: var(--font-display); font-size: .875rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.tabs__item[data-new-win]::after { content: ''; width: 9px; height: 9px; margin-left: -4px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: dot-pulse 1.2s ease-in-out infinite; }
+@keyframes dot-pulse { 50% { opacity: .35; } }
+
 /* ---------- Pied ---------- */
 .footer { display: flex; align-items: center; justify-content: center; gap: var(--s2); padding: var(--s6) var(--s4) calc(var(--s8) + 72px); color: var(--text-inverse-muted); font-size: .875rem; }
 .footer svg { width: 18px; height: 18px; color: var(--brand); }

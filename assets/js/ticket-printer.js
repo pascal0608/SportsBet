@@ -1,8 +1,11 @@
 import { heightMm, layoutFor, loadTicketFonts, PAPER_MM, ticketPdf, ticketPng, ticketSvg } from './ticket-render.js';
+import { countUp, createFx, winSound } from './celebrate.js';
+import { money } from './format.js';
 
 const LINE_UNITS = 30;
 const FEED_DELAY = 260;
 const HEAD_BAND = 30;
+const SLAM_AT = 280, IMPACT_AT = 600;
 
 export const printDuration = picks => Math.min(4000, 1800 + 250 * picks);
 
@@ -77,7 +80,12 @@ export function createPrinter({ getPlayer, getSound, setSound, notify }) {
   const shareBtn = actions.querySelector('[data-ticket-action="share"]');
   const head = document.getElementById('printer-head');
   const printRoot = document.getElementById('print-root');
+  const stamp = document.getElementById('printer-stamp');
+  const winAmount = document.getElementById('printer-win-amount');
+  const winLive = document.getElementById('printer-win-live');
+  const fx = createFx(document.getElementById('printer-fx'));
   let current = null, layout = null, printing = false, stopSound = null, returnFocus = null, pageStyle = null, feed = [], follow = 0;
+  let winTimers = [], stopCount = null;
 
   const filename = ext => `SPORTS_BET_${current.id}.${ext}`;
 
@@ -98,9 +106,45 @@ export function createPrinter({ getPlayer, getSound, setSound, notify }) {
     actions.querySelector('[data-ticket-action="print"]').focus();
   }
 
-  async function open(ticket, { animate = true } = {}) {
+  function clearWin() {
+    winTimers.forEach(clearTimeout);
+    winTimers = [];
+    stopCount?.();
+    fx.stop();
+    delete dialog.dataset.win;
+    delete dialog.dataset.winStage;
+  }
+
+  // Tampon « GAGNÉ » qui s'écrase, flash, canons à confettis, pluie de pièces et compteur de gain.
+  function celebrate(ticket, full) {
+    clearWin();
+    const amount = '+' + money(ticket.payout);
+    dialog.dataset.win = 'true';
+    document.getElementById('printer-stamp-amount').textContent = amount;
+    winLive.textContent = `Ticket gagnant : ${amount}`;
+    if (!full || reducedMotion()) {
+      winAmount.textContent = amount;
+      dialog.dataset.winStage = 'static';
+      return;
+    }
+    winAmount.textContent = '+' + money(0);
+    dialog.dataset.winStage = 'intro';
+    void dialog.offsetWidth;
+    winTimers.push(setTimeout(() => { dialog.dataset.winStage = 'slam'; }, SLAM_AT));
+    winTimers.push(setTimeout(() => {
+      dialog.dataset.winStage = 'party';
+      fx.burst();
+      fx.rain(2600);
+      if (navigator.userActivation?.hasBeenActive) navigator.vibrate?.([25, 40, 70]);
+      if (getSound()) winSound();
+      stopCount = countUp(winAmount, ticket.payout, n => '+' + money(n), 1400);
+    }, IMPACT_AT));
+  }
+
+  async function open(ticket, { animate = true, celebrate: party = null } = {}) {
     returnFocus = document.activeElement;
     current = ticket;
+    clearWin();
     await loadTicketFonts();
     layout = layoutFor(ticket, getPlayer());
     paper.innerHTML = ticketSvg(layout, `Ticket ${ticket.id}`);
@@ -112,6 +156,7 @@ export function createPrinter({ getPlayer, getSound, setSound, notify }) {
       printing = false;
       dialog.dataset.state = 'done';
       actions.querySelector('[data-ticket-action="print"]').focus();
+      if (ticket.status === 'WON' && party) celebrate(ticket, party === 'full');
       return;
     }
     const duration = printDuration(ticket.picks.length);
@@ -200,10 +245,12 @@ export function createPrinter({ getPlayer, getSound, setSound, notify }) {
     printing = false;
     stopSound?.();
     stopSound = null;
+    clearWin();
     dialog.dataset.state = '';
     const target = returnFocus?.isConnected && returnFocus !== document.body && !returnFocus.disabled ? returnFocus : document.querySelector('[data-view-link="tickets"]');
     target?.focus();
   });
+  stamp.addEventListener('click', () => { if (current?.status === 'WON') celebrate(current, true); });
   soundBtn.addEventListener('click', () => {
     setSound(!getSound());
     renderSoundButton();

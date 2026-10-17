@@ -19,6 +19,8 @@ Application web personnelle de paris sportifs en **crédit virtuel**. Elle perme
 | Marchés | Un marché principal par match (1N2, face à face…). Pour le **rugby**, tous les paris simples du match sont aussi proposés sous « +N paris » : marqueurs d'essai, nombre d'essais, handicaps, points, mi-temps… |
 | Ticket | **Une seule sélection par match** : choisir un autre pari du même match remplace le précédent. Cote combinée = produit des cotes. Mise minimale 0,10 €, dans la limite du solde. |
 | Règlement | Automatique, dès qu'un résultat officiel est confirmé. Une sélection perdue fait perdre le ticket. Une sélection annulée compte pour une cote de 1. Si toutes les sélections sont annulées, le ticket est ANNULÉ et la mise remboursée. |
+| Favoris | L'étoile d'un match permet de suivre une équipe ou une compétition. La chip « Favoris » n'affiche que ces matchs ; la liste se gère dans Mon compte. Les favoris font partie des sauvegardes. |
+| Ticket gagnant | À la première ouverture d'un ticket gagné : tampon « GAGNÉ », confettis, pluie de pièces et compteur du gain (son si activé). Ensuite, version calme ; toucher le tampon rejoue la célébration. |
 | Matchs perso | Menu compte → Gestion des matchs : ajout d'un match et saisie manuelle de son résultat. |
 | Ticket imprimé | Animation d'imprimante thermique, puis Imprimer / Image PNG / PDF / Partager. Réouverture depuis « Mes tickets ». |
 
@@ -62,7 +64,7 @@ Les données (solde, tickets, activité, nom du joueur) sont stockées dans le n
 - **Sauvegarder** : Mon compte → « Sauvegarder mes données ». Un fichier `SPORTS_BET_sauvegarde.json` est téléchargé.
 - **Restaurer** : Mon compte → « Restaurer une sauvegarde ». Les sauvegardes des anciennes versions restent acceptées : elles sont migrées automatiquement.
 - Si les données du navigateur deviennent illisibles, une copie brute est conservée sous la clé `sports-bet-autonome-v1-corrompu` avant le redémarrage d'une nouvelle session.
-- Les préférences (son, dernière mise) sont stockées à part et ne font pas partie des sauvegardes.
+- Les préférences (son, dernière mise, gains déjà célébrés) sont stockées à part et ne font pas partie des sauvegardes.
 
 ## Impression
 
@@ -89,7 +91,9 @@ assets/
     betslip.js             sélections, cote combinée, validation d'un ticket
     settle.js              règlement des tickets (fonctions pures)
     format.js              formats fr-FR et traductions
-    prefs.js               préférences locales (son, mise)
+    prefs.js               préférences locales (son, mise, gains déjà célébrés)
+    favorites.js           équipes et compétitions suivies
+    celebrate.js           confettis, pièces et son de victoire
     ticket-layout.js       layout unique du ticket
     ticket-render.js       rendu SVG, PNG et PDF
     ticket-printer.js      animation d'impression, son, exports

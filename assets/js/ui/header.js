@@ -25,8 +25,11 @@ export function renderBalance(value, { announce = true } = {}) {
   shown = value;
 }
 
-export function renderTicketCount(n) {
+export function renderTicketCount(n, newWin = false) {
   document.getElementById('ticket-count').textContent = n ? String(n) : '';
+  const link = document.querySelector('[data-view-link="tickets"]');
+  link.toggleAttribute('data-new-win', newWin);
+  link.setAttribute('aria-label', `Mes tickets${n ? `, ${n} en cours` : ''}${newWin ? ', nouveau gain à découvrir' : ''}`);
 }
 
 export function renderView(view) {

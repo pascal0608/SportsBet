@@ -274,6 +274,10 @@
 
 <dialog class="printer" id="printer" aria-labelledby="printer-title">
   <h2 class="sr-only" id="printer-title">Ticket</h2>
+  <div class="printer__rays" aria-hidden="true"></div>
+  <div class="printer__flash" aria-hidden="true"></div>
+  <canvas class="printer__fx" id="printer-fx" aria-hidden="true"></canvas>
+  <p class="sr-only" id="printer-win-live" aria-live="polite"></p>
   <div class="printer__bar">
     <button class="printer__sound" type="button" id="printer-sound" aria-pressed="false">
       <span class="printer__sound-icon" aria-hidden="true"></span><span class="printer__sound-label">Son</span>
@@ -281,6 +285,10 @@
     <button class="printer__close" type="button" data-ticket-action="close">
       <svg aria-hidden="true"><use href="#i-close"/></svg><span>Fermer</span>
     </button>
+  </div>
+  <div class="win-banner" aria-hidden="true">
+    <span class="win-banner__kicker">Ticket gagnant</span>
+    <strong class="win-banner__amount num" id="printer-win-amount"></strong>
   </div>
   <div class="printer__stage">
     <div class="printer__machine" aria-hidden="true">
@@ -290,6 +298,7 @@
     <div class="printer__window">
       <div class="printer__paper" id="printer-paper"></div>
       <div class="printer__head" id="printer-head" aria-hidden="true"></div>
+      <button class="win-stamp" type="button" id="printer-stamp" aria-label="Rejouer la célébration">Gagné<small class="num" id="printer-stamp-amount"></small></button>
     </div>
   </div>
   <p class="printer__skip">Touchez l'écran ou appuyez sur Échap pour passer</p>

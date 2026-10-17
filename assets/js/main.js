@@ -3,7 +3,7 @@ import { checkBet, combinedOdd, placeBet, potentialPayout, readSlip, toggleSelec
 import { pickVerdict, settleTickets } from './settle.js';
 import { BACKUP_FILENAME, backupJson, KEY, load, MAX_BACKUP_BYTES, parseBackup, persist, playerName, pruneOfficialResults, recordActivity } from './state.js';
 import { ago, money, parseAmount, round2, sportLabel } from './format.js';
-import { loadPrefs, loadSelection, savePrefs, saveSelection } from './prefs.js';
+import { isCelebrated, loadPrefs, loadSelection, markCelebrated, savePrefs, saveSelection } from './prefs.js';
 import { createPrinter } from './ticket-printer.js';
 import { toast } from './ui/toasts.js';
 import { confirmDialog, initDialogs } from './ui/dialogs.js';
@@ -110,9 +110,22 @@ function renderCatalog() {
 
 const renderBetslip = () => renderSlip(slipModel());
 
+const isNewWin = t => t.status === 'WON' && !isCelebrated(app.prefs, t.id);
+
 function renderTickets() {
-  renderTicketCount(app.state.tickets.filter(t => t.status === 'PENDING').length);
-  renderHistory(app.state.tickets, app.historyFilter, p => pickVerdict(app.state, p));
+  renderTicketCount(app.state.tickets.filter(t => t.status === 'PENDING').length, app.state.tickets.some(isNewWin));
+  renderHistory(app.state.tickets, app.historyFilter, p => pickVerdict(app.state, p), isNewWin);
+}
+
+// Première ouverture d'un ticket gagnant : célébration complète, ensuite version calme.
+function openTicket(ticket) {
+  if (!ticket) return;
+  const party = ticket.status === 'WON' ? (isCelebrated(app.prefs, ticket.id) ? 'calm' : 'full') : null;
+  printer.open(ticket, { animate: false, celebrate: party });
+  if (party === 'full') {
+    markCelebrated(app.prefs, ticket.id);
+    renderTickets();
+  }
 }
 
 function renderAll() {
@@ -127,7 +140,7 @@ function renderAll() {
 
 function announceSettled(settled) {
   for (const t of settled.slice(0, 3)) {
-    if (t.status === 'WON') toast(`Ticket gagné : +${money(t.payout)}`, 'success');
+    if (t.status === 'WON') toast(`Ticket gagné : +${money(t.payout)}`, 'success', { action: { label: 'Voir', onClick: () => openTicket(t) } });
     else if (t.status === 'VOID') toast(`Ticket annulé : ${money(t.payout)} remboursés`);
     else toast(`Ticket perdu (${t.id})`);
   }
@@ -274,19 +287,6 @@ async function setManualResult(select) {
   announceSettled(settled);
 }
 
-const currentView = () => location.hash === '#tickets' ? 'tickets' : 'paris';
-
-const printer = createPrinter({
-  getPlayer: () => playerName(app.state),
-  getSound: () => app.prefs.sound,
-  setSound: on => { app.prefs.sound = on; savePrefs(app.prefs); },
-  notify: toast,
-});
-
-function onClick(e) {
-  const odd = e.target.closest('.odd[data-match]');
-  if (odd) {
-    for (const id of toggleSelection(app.selected, odd.dataset.match, odd.dataset.pick, app.state.matches)) updateOdds($('matches'), id, app.selected[id]);
 function toggleFav(chip) {
   const fav = { type: chip.dataset.favType, sport: chip.dataset.favSport, name: chip.dataset.favName };
   const cardId = chip.closest('.match')?.dataset.id;
@@ -306,6 +306,19 @@ function toggleFav(chip) {
   ($('matches').querySelector(`.match[data-id="${CSS.escape(cardId || '')}"] ${selector}`) || $('matches').querySelector(selector))?.focus();
 }
 
+const currentView = () => location.hash === '#tickets' ? 'tickets' : 'paris';
+
+const printer = createPrinter({
+  getPlayer: () => playerName(app.state),
+  getSound: () => app.prefs.sound,
+  setSound: on => { app.prefs.sound = on; savePrefs(app.prefs); },
+  notify: toast,
+});
+
+function onClick(e) {
+  const odd = e.target.closest('.odd[data-match]');
+  if (odd) {
+    for (const id of toggleSelection(app.selected, odd.dataset.match, odd.dataset.pick, app.state.matches)) updateOdds($('matches'), id, app.selected[id]);
     saveSelection(app.selected);
     return renderBetslip();
   }
@@ -317,19 +330,6 @@ function toggleFav(chip) {
     renderBetslip();
     return ($('slip-picks').querySelector('[data-remove]') || $('stake')).focus();
   }
-  const sport = e.target.closest('[data-sport]');
-  if (sport) {
-    app.filters.sport = sport.dataset.sport;
-    app.filters.competition = '';
-    app.limit = PAGE;
-    return renderCatalog();
-  }
-  const stake = e.target.closest('[data-stake]');
-  if (stake) { setStake(stake.dataset.stake); return renderBetslip(); }
-  const filter = e.target.closest('[data-filter]');
-  if (filter) { app.historyFilter = filter.dataset.filter; return renderTickets(); }
-  const open = e.target.closest('[data-open-ticket]');
-  if (open) return printer.open(app.state.tickets.find(t => t.id === open.dataset.openTicket), { animate: false });
   const star = e.target.closest('[data-fav-toggle]');
   if (star) {
     const id = star.dataset.favToggle;
@@ -350,6 +350,19 @@ function toggleFav(chip) {
     }
     return;
   }
+  const sport = e.target.closest('[data-sport]');
+  if (sport) {
+    app.filters.sport = sport.dataset.sport;
+    app.filters.competition = '';
+    app.limit = PAGE;
+    return renderCatalog();
+  }
+  const stake = e.target.closest('[data-stake]');
+  if (stake) { setStake(stake.dataset.stake); return renderBetslip(); }
+  const filter = e.target.closest('[data-filter]');
+  if (filter) { app.historyFilter = filter.dataset.filter; return renderTickets(); }
+  const open = e.target.closest('[data-open-ticket]');
+  if (open) return openTicket(app.state.tickets.find(t => t.id === open.dataset.openTicket));
   const action = e.target.closest('[data-action]')?.dataset.action;
   if (action === 'refresh') return loadCatalog();
   if (action === 'reset-filters') {
@@ -428,6 +441,13 @@ function bind() {
     renderBetslip();
     if (!$('matches').contains(document.activeElement)) renderCatalog();
   }, 30000);
+}
+
+// Avant cette fonctionnalité, aucun gain n'était marqué comme vu : seuls les gains des 48 dernières heures restent à découvrir.
+if (!Array.isArray(app.prefs.celebrated)) {
+  const recent = Date.now() - 48 * 3600e3;
+  app.prefs.celebrated = app.state.tickets.filter(t => t.status === 'WON' && !(Date.parse(t.settledAt) > recent)).map(t => t.id);
+  savePrefs(app.prefs);
 }
 
 bind();

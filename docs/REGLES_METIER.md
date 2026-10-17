@@ -447,3 +447,8 @@ Préférences hors état (clé `sports-bet-preferences`, non sauvegardées) : so
 - **Résultats** : une page de résultat est lue une seule fois par match et règle tous ses marchés (100 pages au plus par passage).
 - **Une sélection par match** : choisir une issue d'un autre marché du même `eventId` remplace la sélection existante ; la validation refuse deux sélections d'un même match (`same-event`).
 - **Stockage** : les marchés `extra` du catalogue ne sont pas enregistrés dans le navigateur ni dans les sauvegardes, sauf ceux présents dans un ticket (ils sont rechargés à chaque ouverture).
+
+### 12.2 Favoris et célébration
+
+- **Favoris** : champ facultatif `favorites` de l'état, liste de `{ type: 'team' | 'competition', sport, name }` (100 au plus, entrées invalides écartées au chargement). Un match est suivi si l'une de ses deux équipes (marchés qui les nomment) ou sa compétition, dans le même sport, est en favori. Comparaison insensible à la casse et aux accents.
+- **Célébration** : uniquement pour un ticket `WON`, à l'ouverture. Version complète la première fois (id mémorisé dans les préférences, 300 au plus), calme ensuite. Au premier lancement de cette version, les gains réglés depuis plus de 48 h sont considérés comme déjà vus. Aucun effet sur les exports (PNG, PDF, impression).

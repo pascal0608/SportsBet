@@ -10,7 +10,7 @@ function gainCell(t) {
   return ['Gain potentiel', money(t.payout)];
 }
 
-function card(t, verdictOf) {
+function card(t, verdictOf, isNewWin) {
   const [gainLabel, gainValue] = gainCell(t);
   const picks = t.picks.map(p => {
     const v = verdictOf(p) || 'PENDING';
@@ -18,18 +18,20 @@ function card(t, verdictOf) {
       + `<span>${esc(chosen(p))}<small>${esc(p.home + (p.away ? ' - ' + p.away : ''))} · ${esc(marketLabel(p.market))}</small><span class="sr-only">, ${VERDICT_TEXT[v]}</span></span>`
       + `<span class="num">${decimal(p.odd)}</span></li>`;
   }).join('');
-  return `<article class="ticket-card" data-status="${esc(t.status)}" aria-label="Ticket ${esc(t.id)}, ${esc(STATUS_LABEL[t.status] || t.status)}">`
+  const fresh = isNewWin(t);
+  return `<article class="ticket-card${fresh ? ' ticket-card--new-win' : ''}" data-status="${esc(t.status)}" aria-label="Ticket ${esc(t.id)}, ${esc(STATUS_LABEL[t.status] || t.status)}">`
     + `<div class="ticket-card__head"><span class="status status--${esc(t.status)}">${esc(STATUS_LABEL[t.status] || t.status)}</span>`
+    + (fresh ? '<span class="ticket-card__new">Nouveau gain !</span>' : '')
     + `<span class="ticket-card__type">${esc(betType(t.picks.length))}</span><span class="ticket-card__date">${esc(displayDate(t))}</span></div>`
     + `<ul class="ticket-card__picks">${picks}</ul>`
     + `<div class="ticket-card__foot"><dl class="kv"><dt>Mise</dt><dd class="num">${money(t.stake)}</dd></dl>`
     + `<dl class="kv"><dt>Cote</dt><dd class="num">${decimal(t.odd)}</dd></dl>`
     + `<dl class="kv kv--gain"><dt>${gainLabel}</dt><dd class="num">${gainValue}</dd></dl>`
-    + `<button type="button" class="btn btn--secondary btn--sm" data-open-ticket="${esc(t.id)}"><svg aria-hidden="true"><use href="#i-ticket"/></svg>Voir le ticket</button></div>`
+    + `<button type="button" class="btn ${fresh ? 'btn--accent' : 'btn--secondary'} btn--sm" data-open-ticket="${esc(t.id)}"><svg aria-hidden="true"><use href="#i-ticket"/></svg>${fresh ? 'Découvrir mon gain' : 'Voir le ticket'}</button></div>`
     + `<p class="sr-only">Numéro ${esc(t.id)}</p></article>`;
 }
 
-export function renderHistory(tickets, filter, verdictOf) {
+export function renderHistory(tickets, filter, verdictOf, isNewWin = () => false) {
   const counts = { PENDING: 0, WON: 0, LOST: 0, ALL: tickets.length };
   for (const t of tickets) if (t.status in counts) counts[t.status]++;
   for (const b of document.querySelectorAll('[data-filter]')) {
@@ -47,6 +49,6 @@ export function renderHistory(tickets, filter, verdictOf) {
   const list = [...tickets].reverse().filter(t => filter === 'ALL' || t.status === filter);
   const el = document.getElementById('history');
   el.innerHTML = list.length
-    ? list.map(t => card(t, verdictOf)).join('')
+    ? list.map(t => card(t, verdictOf, isNewWin)).join('')
     : `<div class="empty-state"><svg aria-hidden="true"><use href="#i-ticket"/></svg><strong>${tickets.length ? 'Aucun ticket dans cette catégorie.' : 'Aucun ticket pour le moment.'}</strong><p>${tickets.length ? 'Change de filtre pour voir tes autres tickets.' : 'Compose ton premier ticket depuis l’onglet Paris.'}</p>${tickets.length ? '' : '<a class="btn btn--accent" href="#paris">Voir les paris</a>'}</div>`;
 }
