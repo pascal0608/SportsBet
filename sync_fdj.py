@@ -4,6 +4,7 @@ import concurrent.futures, datetime, json, pathlib, re, time, urllib.request
 BASE = 'https://www.pointdevente.parionssport.fdj.fr'
 FILE = pathlib.Path(__file__).with_name('sports-data.json')
 NOW = datetime.datetime.now(datetime.timezone.utc)
+RETENTION = datetime.timedelta(days=30)
 
 def page(path):
     if not path.startswith(('/paris-ouverts/', '/resultats/paris-termines/')):
@@ -60,6 +61,18 @@ def confirmed(event, match):
             verdicts[str(o['id'])] = verdict
     return dict(outcomes=verdicts, confirmedAt=NOW.isoformat(), source=BASE + match['resultPath']) if verdicts else None
 
+def recent(value):
+    try:
+        return datetime.datetime.fromisoformat(value.replace('Z', '+00:00')) > NOW - RETENTION
+    except (AttributeError, ValueError):
+        return True
+
+def prune(tracked, results):
+    """Results expire 30 days after confirmation; unresolved matches 30 days after their deadline."""
+    results = {k: v for k, v in results.items() if recent(v.get('confirmedAt'))}
+    tracked = {k: m for k, m in tracked.items() if k not in results and recent(m.get('deadline') or m.get('startDate'))}
+    return tracked, results
+
 def main():
     previous = json.loads(FILE.read_text()) if FILE.exists() else {}
     root = page('/paris-ouverts/tous-sports')  # Failure preserves the last good snapshot.
@@ -88,7 +101,7 @@ def main():
     # Retain known matches so results remain discoverable after betting closes.
     tracked = {m['id']: m for m in previous.get('tracked', [])}
     tracked.update(matches)
-    results = previous.get('results', {})
+    tracked, results = prune(tracked, previous.get('results', {}))
     due = []
     for m in tracked.values():
         if m['id'] in results or not m.get('resultPath'):
@@ -114,7 +127,7 @@ def main():
     for m in previous.get('matches', []):
         if m.get('competition') in errors:
             matches.setdefault(m['id'], m)
-    data = dict(schemaVersion=1, fetchedAt=NOW.isoformat(), matches=list(matches.values()), tracked=list(tracked.values()), results=results, failedCompetitions=errors, incompleteCompetitions=incomplete)
+    data = dict(schemaVersion=1, fetchedAt=NOW.isoformat(), matches=list(matches.values()), tracked=[{k: m.get(k) for k in ('id', 'resultPath', 'startDate', 'deadline')} for m in tracked.values() if m['id'] not in results], results=results, failedCompetitions=errors, incompleteCompetitions=incomplete)
     temporary = FILE.with_suffix('.tmp')
     temporary.write_text(json.dumps(data, ensure_ascii=False, separators=(',', ':')))
     temporary.replace(FILE)
