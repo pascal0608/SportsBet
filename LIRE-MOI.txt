@@ -1,0 +1,29 @@
+SPORTS BET - Correction du 17 octobre 2026
+
+Ces fichiers sont prepares, mais ne sont pas encore publies.
+GitHub refuse l'ecriture par la connexion ChatGPT (erreur 403).
+
+1. Decompresse ce ZIP sur ton PC.
+2. Ouvre https://github.com/pascal0608/SportsBet
+3. Ouvre app.js, clique le crayon, remplace tout son contenu par celui
+   du fichier app.js fourni, puis Commit changes et confirme sur main.
+4. Ouvre .github puis workflows puis fdj.yml, clique le crayon,
+   remplace tout son contenu par le fdj.yml fourni, puis Commit changes
+   et confirme sur main. Le fichier fdj.yml doit rester dans ce dossier.
+5. Cette seconde modification doit lancer une nouvelle publication.
+   Ouvre Actions et attends une nouvelle execution verte.
+   Si rien ne demarre, ouvre le workflow et fais Run workflow sur main.
+6. Ouvre https://pascal0608.github.io/SportsBet/ et fais Ctrl+F5.
+
+Changements :
+- Les nouveaux tickets de simulation restent possibles avec un catalogue
+  datant de moins de 6 heures. L'heure exacte du releve reste affichee.
+- Au-dela de 45 minutes, le site indique que les cotes ne sont pas en direct.
+- Au-dela de 6 heures, les nouveaux tickets sont suspendus.
+- Les nouvelles modifications du code declenchent une publication.
+- Les mises a jour sont demandees aux minutes 7, 22, 37 et 52 ; GitHub
+  peut toujours les retarder. Ce calendrier ne garantit pas du temps reel.
+- Les tickets existants et les regles de verification des resultats sont conserves.
+- Aucune fonction d'envoi de mails n'est ajoutee.
+
+Ne televerse pas le ZIP lui-meme comme fichier du site.
