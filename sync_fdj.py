@@ -5,6 +5,9 @@ BASE = 'https://www.pointdevente.parionssport.fdj.fr'
 FILE = pathlib.Path(__file__).with_name('sports-data.json')
 NOW = datetime.datetime.now(datetime.timezone.utc)
 RETENTION = datetime.timedelta(days=30)
+DETAIL_SPORTS = {'rugby'}  # Sports whose secondary markets are read from each event page.
+COMBINED_MARKET = re.compile(r' et |&|Combiné|Double Chance|Poste', re.I)
+MAX_OUTCOMES = 40
 
 def page(path):
     if not path.startswith(('/paris-ouverts/', '/resultats/paris-termines/')):
@@ -28,10 +31,20 @@ def slug(value):
     value = ''.join(c for c in unicodedata.normalize('NFD', value) if not unicodedata.combining(c))
     return re.sub('[^a-z0-9]+', '-', value.lower()).strip('-')
 
-def normalize(event):
-    market = next((m for m in event.get('markets', []) if any(o.get('status') == 'published' and float(o.get('price') or 0) > 1 for o in m.get('outcomes', []))), None)
-    if not market:
-        return None
+def published(market):
+    return any(o.get('status') == 'published' and float(o.get('price') or 0) > 1 for o in market.get('outcomes', []))
+
+def market_label(market):
+    kind = (market.get('type') or {}).get('label') or market['label']
+    try:
+        return f"{kind} {float(market['handicap']):+g}".replace('.', ',')
+    except (KeyError, TypeError, ValueError):
+        pass
+    if market['label'] == 'MT/FM' or '_' in market['label']:
+        return kind
+    return re.sub(r' MT$', ' (mi-temps)', market['label'])
+
+def entry(event, market, extra=False):
     sport, competition = event['sport'], event.get('competition') or {}
     outcomes = []
     for o in market['outcomes']:
@@ -42,7 +55,29 @@ def normalize(event):
         price = float(o['price'])
         outcomes.append(dict(key=str(o['id']), label=label, short='X' if o['label'] == 'N' else o['label'], baseOdd=price, odd=round(price * 1.07 + 1e-9, 2)))
     path = f"/resultats/paris-termines/{sport['slug']}/{slug(competition['label'])}/{competition['id']}/match/{event['id']}" if competition else None
-    return dict(id=f"fdj-{event['id']}-{market['id']}", eventId=event['id'], home=event['description'], away='', sport=sport['label'], competition=competition.get('label', ''), resultPath=path, startDate=event['startDate'], deadline=market.get('endValidationDate'), market=market['label'], matchNumber=market.get('index'), outcomes=outcomes, result='', demo=False, official=True)
+    match = dict(id=f"fdj-{event['id']}-{market['id']}", eventId=event['id'], home=event['description'], away='', sport=sport['label'], competition=competition.get('label', ''), resultPath=path, startDate=event['startDate'], deadline=market.get('endValidationDate'), market=market['label'], matchNumber=market.get('index'), outcomes=outcomes, result='', demo=False, official=True)
+    if extra:
+        match.update(market=market_label(market), extra=True)
+    return match
+
+def normalize(event):
+    market = next((m for m in event.get('markets', []) if published(m)), None)
+    return entry(event, market) if market else None
+
+def secondary(event):
+    """Single (non-combined) markets listed on the event's own page, besides the main one."""
+    competition = event['competition']
+    path = f"/paris-ouverts/{event['sport']['slug']}/{slug(competition['label'])}/{competition['id']}/match/{event['id']}"
+    detail = page(path)['eventResolver']
+    markets = detail.get('markets', []) + [m for g in detail.get('groupedMarkets', []) for m in g.get('markets', [])]
+    extras = []
+    for m in markets:
+        if published(m) and not COMBINED_MARKET.search(m.get('label', '')) and len(m.get('outcomes', [])) <= MAX_OUTCOMES:
+            try:
+                extras.append(entry(event, m, extra=True))
+            except (KeyError, TypeError, ValueError):
+                pass
+    return extras
 
 def confirmed(event, match):
     _, event_id, market_id = match['id'].split('-')
@@ -81,19 +116,28 @@ def main():
     def competition(item):
         s, c = item
         data = page(f"/paris-ouverts/{s['slug']}/{slug(c['label'])}/{c['id']}")['eventsResolver']
-        return data
+        extras = []
+        if s['slug'] in DETAIL_SPORTS:
+            for event in data['events']:
+                try:
+                    extras += secondary(event)
+                except Exception:
+                    pass  # The main market from the listing stays available.
+        return data, extras
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
         tasks = {pool.submit(competition, item): item for item in queue}
         for task in concurrent.futures.as_completed(tasks):
             item = tasks[task]
             try:
-                data = task.result()
+                data, extras = task.result()
                 if data['pagination']['total'] > len(data['events']):
                     incomplete.append(item[1]['label'])
                 for event in data['events']:
                     match = normalize(event)
                     if match:
                         matches[match['id']] = match
+                for match in extras:
+                    matches.setdefault(match['id'], match)
             except Exception:
                 errors.append(item[1]['label'])
     if not matches:
@@ -110,17 +154,20 @@ def main():
         if deadline and datetime.datetime.fromisoformat(deadline.replace('Z', '+00:00')) <= NOW:
             due.append(m)
     due.sort(key=lambda m: m.get('deadline') or m.get('startDate') or '', reverse=True)
-    def result(match):
-        data = page(match['resultPath'])
-        return confirmed(data.get('eventResultedResolver') or {}, match)
+    # One result page per event settles all of its markets.
+    pages = {}
+    for m in due:
+        pages.setdefault(m['resultPath'], []).append(m)
+    def result(path):
+        event = page(path).get('eventResultedResolver') or {}
+        return [(m, confirmed(event, m)) for m in pages[path]]
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
-        tasks = {pool.submit(result, m): m for m in due[:100]}
+        tasks = [pool.submit(result, path) for path in list(pages)[:100]]
         for task in concurrent.futures.as_completed(tasks):
-            match = tasks[task]
             try:
-                verdict = task.result()
-                if verdict:
-                    results[match['id']] = verdict
+                for match, verdict in task.result():
+                    if verdict:
+                        results[match['id']] = verdict
             except Exception:
                 pass  # Never infer a result from a failed request or a missing event.
     # Keep cached fixtures for failed competitions, with their existing deadlines.
