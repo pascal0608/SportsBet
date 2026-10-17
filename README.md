@@ -24,7 +24,7 @@ Application web personnelle de paris sportifs en **crédit virtuel**. Elle perme
 | Matchs perso | Menu compte → Gestion des matchs : ajout d'un match et saisie manuelle de son résultat. |
 | Ticket imprimé | Animation d'imprimante thermique, puis Imprimer / Image PNG / PDF / Partager. Réouverture depuis « Mes tickets ». |
 
-Le détail des règles est dans [docs/REGLES_METIER.md](docs/REGLES_METIER.md).
+Le détail des règles est dans [docs/REGLES_METIER.md](docs/REGLES_METIER.md). Les pistes d'évolution (e-mails, sons, PWA, statistiques…) sont dans [docs/EVOLUTIONS.md](docs/EVOLUTIONS.md).
 
 ## Lancer le site en local
 
