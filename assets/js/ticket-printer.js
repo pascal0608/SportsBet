@@ -162,6 +162,9 @@ export function createPrinter({ getPlayer, getSound, setSound, notify }) {
     if (button) return run(button.dataset.ticketAction);
     if (printing && !e.target.closest('#printer-sound')) finish();
   });
+  dialog.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && printing) { e.preventDefault(); finish(); }
+  });
   dialog.addEventListener('cancel', e => {
     if (printing) { e.preventDefault(); finish(); }
   });
@@ -170,7 +173,8 @@ export function createPrinter({ getPlayer, getSound, setSound, notify }) {
     stopSound?.();
     stopSound = null;
     dialog.dataset.state = '';
-    if (returnFocus?.isConnected) returnFocus.focus();
+    const target = returnFocus?.isConnected && returnFocus !== document.body && !returnFocus.disabled ? returnFocus : document.querySelector('[data-view-link="tickets"]');
+    target?.focus();
   });
   soundBtn.addEventListener('click', () => {
     setSound(!getSound());

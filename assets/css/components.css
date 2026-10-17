@@ -235,6 +235,7 @@ main:focus { outline: none; }
 
 /* ---------- Carte match ---------- */
 .match-list { display: grid; gap: var(--s3); margin-bottom: var(--s4); }
+.match-list[aria-busy="true"] { min-height: 150vh; }
 .match {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
