@@ -102,6 +102,12 @@ tests/                     tests node:test, sans dépendance
 docs/                      cahier des charges et règles métier
 ```
 
+## Modifier le code
+
+Les navigateurs gardent les fichiers en cache (10 minutes sur GitHub Pages). Pour qu'une modification arrive chez tout le monde en même temps, **augmenter le numéro de version `?v=…` dans `index.html`** : il figure dans l'import map, sur `main.js` et sur les quatre feuilles de style. Il faut changer toutes les occurrences, par exemple `20261017-3` → `20261018-1`. Un nouveau fichier JavaScript doit aussi être ajouté à l'import map. Le test `tests/cache.test.js` vérifie que rien n'est oublié.
+
+Si la page affiche une erreur du type « does not provide an export named… » juste après une mise à jour, c'est un mélange d'anciens et de nouveaux fichiers en cache : un rechargement forcé (Ctrl+Maj+R, ou Cmd+Maj+R sur Mac) règle le problème.
+
 ## Tests
 
 ```bash
