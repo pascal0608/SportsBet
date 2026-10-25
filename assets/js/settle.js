@@ -19,7 +19,7 @@ export function settleTickets(state, now = new Date()) {
     } else if (verdicts.length && verdicts.every(v => v === 'WON' || v === 'VOID')) {
       const originalRawOdd = t.picks.reduce((acc, p) => acc * p.odd, 1);
       const adjustedRawOdd = t.picks.reduce((acc, p, i) => acc * (verdicts[i] === 'VOID' ? 1 : p.odd), 1);
-      // Conserve la réduction enregistrée sur chaque ticket.
+      // Conserve le coefficient de réduction enregistré sur le ticket.
       const factor = originalRawOdd > 0 ? t.odd / originalRawOdd : 1;
       const odd = verdicts.every(v => v === 'VOID') ? 1 : adjustedRawOdd * factor;
       if (odd !== t.odd) t.initialOdd ??= t.odd;
