@@ -44,7 +44,11 @@ export function readSlip(matches, selected, now = Date.now()) {
   return { picks, unavailable };
 }
 
-export const combinedOdd = picks => picks.reduce((a, p) => a * p.odd, 1);
+// Réduction de 28 % sur les cotes combinées à partir de 3 sélections.
+export const combinedOdd = picks => {
+  const rawOdd = picks.reduce((a, p) => a * p.odd, 1);
+  return picks.length >= 3 ? rawOdd * 0.72 : rawOdd;
+};
 
 export const potentialPayout = (stake, odd) => round2(stake * odd);
 
